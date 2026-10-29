@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>COMFY prova fotocamera</title>
+<link rel="stylesheet" href="style.css">
+<style>
+video{width:100%;border-radius:16px;background:#000;transform:scaleX(-1);max-height:46vh;object-fit:cover}
+pre{margin:0;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--stroke);border-radius:12px;padding:10px;max-height:260px;overflow:auto}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600}
+.pill.ok{background:var(--oks);color:#1E6B41}.pill.bad{background:var(--bads);color:var(--bad)}
+</style>
+</head>
+<body>
+<main class="body">
+  <div class="step">COMFY · PROVA FOTOCAMERA</div>
+  <h1>Safari dà l'esposizione della fotocamera dal vivo?</h1>
+  <p class="t"><b>Seconda prova:</b> dopo i 20 secondi la pagina scatta anche una foto con la funzione «takePhoto» di Safari e controlla se contiene ISO e tempo di esposizione.</p>
+  <p class="t">Tocca Avvia, consenti la fotocamera e guarda lo schermo per circa 20 secondi. A metà copri l'obiettivo con un dito per 3 secondi e poi toglilo: serve a vedere se i valori cambiano con la luce. Alla fine copia i risultati e incollali nella chat.</p>
+  <button class="btn" id="start" type="button">Avvia</button>
+  <video id="v" playsinline muted autoplay></video>
+  <div class="card"><div class="h">Esito</div><div class="s" id="verdict">non avviato</div></div>
+  <div class="card"><div class="h">Foto scattata con takePhoto</div><div class="s" id="photo">in attesa</div></div>
+  <div class="card"><div class="h">Valori letti ogni secondo</div><pre id="live">–</pre></div>
+  <button class="btn out" id="copy" type="button">Copia i risultati</button>
+  <pre id="out" hidden></pre><p class="t small" id="msg"></p>
+</main>
+<script type="module">
+import { parseExif } from './light.js';
+const R={userAgent:navigator.userAgent,imageCapture:'ImageCapture' in window,supportedConstraints:navigator.mediaDevices&&navigator.mediaDevices.getSupportedConstraints?navigator.mediaDevices.getSupportedConstraints():null,samples:[],applyManual:null,errors:[]};
+const KEYS=['exposureMode','exposureTime','exposureCompensation','iso','whiteBalanceMode','colorTemperature','focusMode','brightness','width','height','frameRate','zoom'];
+const $=s=>document.querySelector(s);
+function pick(o){const r={};KEYS.forEach(k=>{if(o&&o[k]!==undefined)r[k]=o[k]});return r}
+$('#start').onclick=async()=>{
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false})}
+  catch(e){$('#verdict').innerHTML=`<span class="pill bad">fotocamera non disponibile</span> ${e.name}`;R.errors.push(e.name+': '+e.message);return}
+  const v=$('#v');v.srcObject=stream;await v.play().catch(()=>{});
+  const tr=stream.getVideoTracks()[0];R.label=tr.label;
+  try{R.capabilities=pick(tr.getCapabilities?tr.getCapabilities():{});R.capabilitiesAll=Object.keys(tr.getCapabilities?tr.getCapabilities():{})}catch(e){R.errors.push('caps '+e)}
+  try{R.settings0=tr.getSettings()}catch(e){R.errors.push('settings '+e)}
+  try{await tr.applyConstraints({advanced:[{exposureMode:'manual'}]});R.applyManual='accettato: '+JSON.stringify(pick(tr.getSettings()))}catch(e){R.applyManual='rifiutato: '+e.name}
+  const c=document.createElement('canvas'),g=c.getContext('2d',{willReadFrequently:true});c.width=160;c.height=90;
+  let n=0;const timer=setInterval(()=>{
+    g.drawImage(v,0,0,160,90);const d=g.getImageData(40,15,80,60).data;let s=0;for(let i=0;i<d.length;i+=4)s+=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    const st=pick(tr.getSettings());const row={t:n,luma:+(s/(d.length/4)).toFixed(1),...st};R.samples.push(row);
+    $('#live').textContent=R.samples.slice(-8).map(x=>JSON.stringify(x)).join('\n');
+    if(++n>=22){clearInterval(timer);finish();shoot(tr).finally(()=>tr.stop())}
+  },1000);
+  $('#verdict').textContent='registrazione in corso (22 s)…';
+};
+async function shoot(tr){
+  const box=$('#photo');
+  if(!('ImageCapture' in window)){box.innerHTML='<span class="pill bad">non disponibile</span>';R.takePhoto='ImageCapture assente';return}
+  try{
+    const ic=new ImageCapture(tr);
+    try{R.photoCapabilities=await ic.getPhotoCapabilities()}catch(e){R.photoCapabilities='errore '+e.name}
+    box.textContent='scatto in corso…';
+    const blob=await ic.takePhoto();
+    const ex=parseExif(await blob.arrayBuffer());
+    R.takePhoto={type:blob.type,kB:Math.round(blob.size/1024),exif:ex};
+    const ok=ex&&ex.iso>0&&ex.exposureS>0;
+    box.innerHTML=ok?`<span class="pill ok">Sì</span> la foto contiene ISO ${ex.iso} e esposizione 1/${Math.round(1/ex.exposureS)} s${ex.fNumber?' · f/'+ex.fNumber.toFixed(1):''}`
+      :`<span class="pill bad">No</span> la foto (${blob.type}, ${R.takePhoto.kB} kB) ${ex?'ha dati EXIF ma senza ISO/esposizione':'non ha dati EXIF'}`;
+  }catch(e){R.takePhoto='errore '+e.name+': '+e.message;box.innerHTML=`<span class="pill bad">errore</span> ${e.name}`}
+}
+function finish(){
+  const hasT=R.samples.some(x=>x.exposureTime!==undefined),hasI=R.samples.some(x=>x.iso!==undefined);
+  const varies=hasT&&new Set(R.samples.map(x=>x.exposureTime)).size>1;
+  R.esito={exposureTime:hasT,iso:hasI,exposureTimeCambia:varies};
+  $('#verdict').innerHTML=hasT&&hasI?`<span class="pill ok">Sì</span> Safari fornisce tempo di esposizione e ISO dal vivo${varies?' e cambiano con la luce':', ma non cambiano con la luce'}.`
+    :`<span class="pill bad">No</span> Safari non fornisce ${!hasT&&!hasI?'né tempo di esposizione né ISO':!hasT?'il tempo di esposizione':'l\'ISO'} della fotocamera dal vivo.`;
+}
+$('#copy').onclick=()=>{const txt='COMFY prova fotocamera\n'+JSON.stringify(R,null,1);const o=$('#out');o.textContent=txt;o.hidden=false;
+  const sel=()=>{const r=document.createRange();r.selectNodeContents(o);const s=getSelection();s.removeAllRanges();s.addRange(r)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>$('#msg').textContent='Copiato: incollalo nella chat.',()=>{sel();$('#msg').textContent='Tieni premuto sul testo e copialo.'});else{sel();$('#msg').textContent='Tieni premuto sul testo e copialo.'}};
+</script>
+</body>
+</html>
