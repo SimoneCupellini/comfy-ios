@@ -239,3 +239,20 @@ function renderPreview(src, peri) {
   }
   return c.toDataURL('image/jpeg', 0.8);
 }
+
+// ------------------------------------------------------------------ fotocamera dentro COMFY (ImageCapture.takePhoto)
+export const canTakePhoto = () => 'ImageCapture' in window && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+export async function startCamera(video) {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+  video.srcObject = stream; video.setAttribute('playsinline', ''); video.muted = true;
+  await video.play().catch(() => {});
+  return stream;
+}
+export function stopCamera(stream) { try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {} }
+/** Scatta una foto vera (con EXIF) dal flusso della fotocamera frontale. */
+export async function takePhoto(stream) {
+  const track = stream.getVideoTracks()[0];
+  const ic = new ImageCapture(track);
+  const blob = await ic.takePhoto();
+  return new File([blob], 'selfie.jpg', { type: blob.type || 'image/jpeg', lastModified: Date.now() });
+}
