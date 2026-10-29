@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>COMFY prova microfono</title>
+<style>
+/* layout: una colonna da telefono; schermata nera a tutto schermo durante il monitoraggio */
+:root{
+  --bg:#F6F2EF; --card:#FFFFFF; --fg:#231C19; --muted:#6E615A; --line:#E4D9D2;
+  --accent:#A4472B; --accent-soft:#F6E3DB; --ok:#2E7D4F; --ok-soft:#E2EFDA; --bad:#B3261E; --bad-soft:#FBE3E1; --warn-soft:#FFF2CC;
+  --sans:-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#1B1614; --card:#251F1C; --fg:#F1E8E3; --muted:#B3A49B; --line:#3A302B;
+  --accent:#E07A5A; --accent-soft:#3D2620; --ok:#7CCB98; --ok-soft:#1F3326; --bad:#F2928A; --bad-soft:#3E1F1C; --warn-soft:#3A3219; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(40px,env(safe-area-inset-bottom));
+  padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:flex;flex-direction:column;gap:16px}
+h1{font-size:24px;font-weight:600;margin:0}
+h2{font-size:16px;font-weight:600;margin:0}
+p{margin:0;color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+button{font:inherit;font-weight:500;padding:12px 16px;border-radius:12px;cursor:pointer;border:1.5px solid var(--accent);flex:1 1 200px}
+.primary{background:var(--accent);color:#fff}
+.secondary{background:transparent;color:var(--accent)}
+button:disabled{opacity:.45}
+ol{margin:0;padding-left:20px;color:var(--muted)} ol li+li{margin-top:4px}
+.big{font-family:var(--mono);font-size:44px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
+.big small{font-size:16px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{color:var(--muted);padding-right:12px;width:50%}
+td:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;word-break:break-word}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:500}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--fg)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);flex:1 1 120px}
+input[type=number]{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%}
+pre{margin:0;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:240px;overflow:auto}
+canvas{width:100%;height:90px;display:block}
+.chk{display:flex;gap:8px;align-items:center;color:var(--fg)}
+/* schermata nera */
+#black{position:fixed;inset:0;background:#000;color:#5a5a5a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:50;font-family:var(--mono);font-size:14px;text-align:center;padding:24px}
+#black .lv{font-size:22px;color:#7a7a7a}
+#remind{position:fixed;inset:0;background:var(--accent);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:60;padding:24px;text-align:center}
+#remind h2{font-size:24px}
+#remind button{background:#fff;color:var(--accent);border-color:#fff;flex:0 0 auto;min-width:220px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <span class="eyebrow">COMFY · prova microfono iOS</span>
+    <h1>Il suono si può monitorare da Safari?</h1>
+    <p>La pagina registra il livello sonoro in continuo con il telefono sul banco e lo schermo nero, come farebbe la versione web di COMFY. Alla fine copia i risultati e incollali nella chat.</p>
+  </header>
+
+  <section class="card">
+    <h2>Come fare</h2>
+    <ol>
+      <li>Annota la <b>percentuale di batteria</b> qui sotto, con il telefono scollegato dal caricatore.</li>
+      <li>Tocca <b>Avvia</b> e consenti l'uso del microfono.</li>
+      <li>Tocca <b>Schermo nero</b> e lascia il telefono sul banco per <b>15 minuti</b>, senza bloccarlo e senza cambiare app.</li>
+      <li>A metà prova, se vuoi, blocca il telefono per un minuto e poi sbloccalo: serve a vedere cosa succede ai dati.</li>
+      <li>Tocca lo schermo nero per tornare qui, annota la batteria finale, tocca <b>Ferma</b> e poi <b>Copia i risultati</b>.</li>
+    </ol>
+    <div class="row">
+      <label for="b0">Batteria all'inizio (%)<input id="b0" type="number" inputmode="numeric" min="0" max="100"></label>
+      <label for="b1">Batteria alla fine (%)<input id="b1" type="number" inputmode="numeric" min="0" max="100"></label>
+    </div>
+    <label class="chk" for="rem"><input id="rem" type="checkbox" checked> Promemoria di prova ogni 5 minuti (suono e schermata)</label>
+    <div class="btns">
+      <button class="primary" id="start" type="button">Avvia</button>
+      <button class="secondary" id="blackBtn" type="button" disabled>Schermo nero</button>
+      <button class="secondary" id="stop" type="button" disabled>Ferma</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Livello in tempo reale</h2>
+    <div class="big" id="now">– <small>dB(A) fondo scala</small></div>
+    <canvas id="spark" width="600" height="90" aria-label="Andamento del livello negli ultimi 2 minuti"></canvas>
+    <p style="font-size:13px">Valori non calibrati (dB rispetto al fondo scala del microfono): servono solo a confrontare momenti diversi sullo stesso telefono.</p>
+    <table id="stats"></table>
+  </section>
+
+  <section class="card">
+    <h2>Impostazioni del microfono applicate da Safari</h2>
+    <table id="mic"><tr><td>Stato</td><td>non avviato</td></tr></table>
+  </section>
+
+  <section class="card">
+    <h2>Risultati</h2>
+    <div class="btns"><button class="secondary" id="copy" type="button">Copia i risultati</button></div>
+    <pre id="out" hidden></pre>
+    <p id="copymsg" style="font-size:13px"></p>
+  </section>
+</div>
+
+<div id="black" hidden>
+  <div>COMFY · monitoraggio attivo</div>
+  <div class="lv" id="blv">–</div>
+  <div id="btime">0:00</div>
+  <div style="margin-top:18px;font-size:12px;color:#3c3c3c">Tocca per tornare alla pagina</div>
+</div>
+<div id="remind" hidden>
+  <h2>È ora della misura</h2>
+  <p style="color:#fff;opacity:.9">Promemoria di prova: nella versione vera qui si aprirebbe il questionario.</p>
+  <button id="remOk" type="button">Ho visto il promemoria</button>
+</div>
+
+<script>
+/* ---------- filtro di ponderazione A (bilineare, ordine 6, 0 dB a 1 kHz) ---------- */
+function polyMul(a,b){const r=new Array(a.length+b.length-1).fill(0);a.forEach((x,i)=>b.forEach((y,j)=>r[i+j]+=x*y));return r}
+function polyPow(p,n){let r=[1];for(let i=0;i<n;i++)r=polyMul(r,p);return r}
+function gainAt(b,a,f,fs){const w=2*Math.PI*f/fs;let nr=0,ni=0,dr=0,di=0;
+  b.forEach((c,i)=>{nr+=c*Math.cos(-w*i);ni+=c*Math.sin(-w*i)});a.forEach((c,i)=>{dr+=c*Math.cos(-w*i);di+=c*Math.sin(-w*i)});
+  return Math.hypot(nr,ni)/Math.hypot(dr,di)}
+function aWeighting(fs){
+  const w=[20.598997,107.65265,737.86223,12194.217].map(f=>2*Math.PI*f),k=2*fs,fac=a=>[a-k,a+k];
+  let den=polyMul(polyMul(polyPow(fac(w[0]),2),fac(w[1])),polyMul(fac(w[2]),polyPow(fac(w[3]),2)));
+  let num=polyMul(polyPow([-k,k],4),polyPow([1,1],2));
+  num=num.reverse();den=den.reverse();const a0=den[0];num=num.map(x=>x/a0);den=den.map(x=>x/a0);
+  const g=gainAt(num,den,1000,fs);return {b:num.map(x=>x/g),a:den};
+}
+
+/* ---------- processore audio: energia ponderata A e non ponderata ogni 100 ms ---------- */
+const WORKLET=`
+class Lev extends AudioWorkletProcessor{
+  constructor(o){super();const p=o.processorOptions;this.b=p.b;this.a=p.a;this.x=new Float64Array(7);this.y=new Float64Array(7);
+    this.block=Math.round(sampleRate/10);this.n=0;this.sa=0;this.sz=0;this.pk=0;}
+  process(inputs){const ch=inputs[0]&&inputs[0][0];if(!ch)return true;const b=this.b,a=this.a,x=this.x,y=this.y;
+    for(let i=0;i<ch.length;i++){const v=ch[i];
+      for(let j=6;j>0;j--)x[j]=x[j-1];x[0]=v;
+      let o=b[0]*x[0]+b[1]*x[1]+b[2]*x[2]+b[3]*x[3]+b[4]*x[4]+b[5]*x[5]+b[6]*x[6]-a[1]*y[0]-a[2]*y[1]-a[3]*y[2]-a[4]*y[3]-a[5]*y[4]-a[6]*y[5];
+      for(let j=6;j>0;j--)y[j]=y[j-1];y[0]=o;
+      this.sa+=o*o;this.sz+=v*v;const av=v<0?-v:v;if(av>this.pk)this.pk=av;
+      if(++this.n>=this.block){this.port.postMessage({t:currentTime,msA:this.sa/this.n,msZ:this.sz/this.n,pk:this.pk});this.n=0;this.sa=0;this.sz=0;this.pk=0;}}
+    return true;}
+}
+registerProcessor('lev',Lev);`;
+
+const $=s=>document.querySelector(s);
+const st={running:false,t0:null,ctx:null,stream:null,track:null,node:null,wake:null,wakeInfo:'non richiesto',
+  blocks:[],sec:[],minute:[],events:[],gaps:[],lastMsgWall:null,reminders:[],remindTimer:null,info:{}};
+const db=ms=>ms>0?10*Math.log10(ms):-120;
+const nowS=()=>st.t0?((performance.now()-st.t0)/1000):0;
+const clock=s=>{s=Math.max(0,Math.round(s));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+function ev(type,detail){st.events.push({t:+nowS().toFixed(1),ora:new Date().toLocaleTimeString('it-IT'),type,detail:detail||''})}
+
+/* ---------- avvio ---------- */
+$('#start').addEventListener('click',async()=>{
+  try{
+    const cons={audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}};
+    st.stream=await navigator.mediaDevices.getUserMedia(cons);
+  }catch(e){$('#mic').innerHTML=`<tr><td>Stato</td><td><span class="pill bad">microfono non disponibile</span> ${e.name}: ${e.message}</td></tr>`;return}
+  st.track=st.stream.getAudioTracks()[0];
+  const AC=window.AudioContext||window.webkitAudioContext; st.ctx=new AC();
+  const {b,a}=aWeighting(st.ctx.sampleRate);
+  const url=URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'}));
+  await st.ctx.audioWorklet.addModule(url);
+  const src=st.ctx.createMediaStreamSource(st.stream);
+  st.node=new AudioWorkletNode(st.ctx,'lev',{processorOptions:{b,a}});
+  const mute=st.ctx.createGain();mute.gain.value=0;
+  src.connect(st.node);st.node.connect(mute);mute.connect(st.ctx.destination);
+  st.node.port.onmessage=onBlock;
+  if(st.ctx.state!=='running')await st.ctx.resume();
+  st.t0=performance.now();st.running=true;st.lastMsgWall=performance.now();
+  st.info={avvio:new Date().toISOString(),sampleRate:st.ctx.sampleRate,baseLatency:st.ctx.baseLatency??null,
+    impostazioni:st.track.getSettings?st.track.getSettings():null,capacita:st.track.getCapabilities?safeCaps(st.track):null,
+    etichetta:st.track.label,vincoliRichiesti:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}};
+  showMic();
+  st.ctx.onstatechange=()=>ev('audiocontext',st.ctx.state);
+  st.track.onmute=()=>ev('microfono','muto');st.track.onunmute=()=>ev('microfono','riattivato');st.track.onended=()=>ev('microfono','terminato');
+  ev('avvio');await askWake();
+  $('#start').disabled=true;$('#blackBtn').disabled=false;$('#stop').disabled=false;
+  if($('#rem').checked)st.remindTimer=setInterval(remind,5*60*1000);
+  tick();
+});
+function safeCaps(t){try{const c=t.getCapabilities();return {echoCancellation:c.echoCancellation,noiseSuppression:c.noiseSuppression,autoGainControl:c.autoGainControl,sampleRate:c.sampleRate,channelCount:c.channelCount}}catch(e){return String(e)}}
+function showMic(){
+  const s=st.info.impostazioni||{};const f=v=>v===false?'<span class="pill ok">disattivata</span>':v===true?'<span class="pill bad">attiva</span>':'<span class="pill warn">non dichiarata</span>';
+  $('#mic').innerHTML=[['Microfono',st.track.label||'–'],['Frequenza di campionamento',st.info.sampleRate+' Hz'],
+    ['Cancellazione dell\'eco',f(s.echoCancellation)],['Riduzione del rumore',f(s.noiseSuppression)],['Controllo automatico del volume',f(s.autoGainControl)],
+    ['Schermo sempre acceso',st.wakeInfo]].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+
+/* ---------- schermo sempre acceso ---------- */
+async function askWake(){
+  if('wakeLock' in navigator){
+    try{st.wake=await navigator.wakeLock.request('screen');st.wakeInfo='<span class="pill ok">attivo</span>';ev('wakelock','attivo');
+      st.wake.addEventListener('release',()=>{ev('wakelock','rilasciato');st.wakeInfo='<span class="pill warn">rilasciato</span>';showMic()})}
+    catch(e){st.wakeInfo=`<span class="pill bad">rifiutato</span> ${e.name}`;ev('wakelock','rifiutato '+e.name)}
+  } else {st.wakeInfo='<span class="pill bad">non supportato</span>';ev('wakelock','non supportato')}
+  showMic();
+}
+document.addEventListener('visibilitychange',async()=>{
+  ev('visibilita',document.visibilityState);
+  if(document.visibilityState==='visible'&&st.running){
+    if(st.ctx&&st.ctx.state!=='running'){try{await st.ctx.resume();ev('audiocontext','ripreso '+st.ctx.state)}catch(e){ev('audiocontext','ripresa fallita')}}
+    if(!st.wake||st.wake.released)await askWake();
+  }
+});
+window.addEventListener('pagehide',()=>ev('pagina','nascosta'));
+
+/* ---------- dati ---------- */
+let secAcc={n:0,a:0,z:0,pk:0};
+function onBlock(m){
+  const w=performance.now(),gap=(w-st.lastMsgWall)/1000;st.lastMsgWall=w;
+  if(gap>0.6)st.gaps.push({da:+(nowS()-gap).toFixed(1),durata_s:+gap.toFixed(1)});
+  const d=m.data;secAcc.n++;secAcc.a+=d.msA;secAcc.z+=d.msZ;if(d.pk>secAcc.pk)secAcc.pk=d.pk;
+  if(secAcc.n>=10){const LA=db(secAcc.a/secAcc.n),LZ=db(secAcc.z/secAcc.n);
+    st.sec.push({t:Math.round(nowS()),LA:+LA.toFixed(1),LZ:+LZ.toFixed(1),pk:+(20*Math.log10(secAcc.pk||1e-12)).toFixed(1),rem:st.remActive?1:0});
+    secAcc={n:0,a:0,z:0,pk:0};$('#now').innerHTML=`${LA.toFixed(1)} <small>dB(A) fondo scala</small>`;$('#blv').textContent=LA.toFixed(1)+' dB(A)';}
+}
+function pct(arr,p){if(!arr.length)return null;const s=[...arr].sort((x,y)=>x-y);const i=(s.length-1)*p;const lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo)}
+function laeq(arr){return arr.length?10*Math.log10(arr.reduce((s,v)=>s+Math.pow(10,v/10),0)/arr.length):null}
+function summary(){
+  const valid=st.sec.filter(s=>!s.rem).map(s=>s.LA);const dur=nowS();
+  const perMin=[];for(let m=0;m*60<dur;m++){const v=st.sec.filter(s=>s.t>m*60&&s.t<=(m+1)*60&&!s.rem).map(s=>s.LA);
+    perMin.push({min:m+1,LAeq:v.length?+laeq(v).toFixed(1):null,frazione_valida:+(v.length/60).toFixed(2)})}
+  return {durata_s:Math.round(dur),secondi_registrati:st.sec.length,frazione_valida:dur?+(st.sec.length/dur).toFixed(3):null,
+    LAeq:valid.length?+laeq(valid).toFixed(1):null,LA10:pct(valid,0.9)?.toFixed(1),LA50:pct(valid,0.5)?.toFixed(1),LA90:pct(valid,0.1)?.toFixed(1),perMin};
+}
+function drawSpark(){
+  const c=$('#spark'),g=c.getContext('2d'),W=c.width,H=c.height;g.clearRect(0,0,W,H);
+  const v=st.sec.slice(-120).map(s=>s.LA);if(v.length<2)return;
+  const lo=Math.min(...v)-3,hi=Math.max(...v)+3,css=getComputedStyle(document.documentElement);
+  g.strokeStyle=css.getPropertyValue('--line');g.lineWidth=1;for(let i=1;i<4;i++){g.beginPath();g.moveTo(0,H*i/4);g.lineTo(W,H*i/4);g.stroke()}
+  g.strokeStyle=css.getPropertyValue('--accent');g.lineWidth=2.5;g.beginPath();
+  v.forEach((x,i)=>{const X=i/(119)*W,Y=H-(x-lo)/(hi-lo)*H;i?g.lineTo(X,Y):g.moveTo(X,Y)});g.stroke();
+}
+function tick(){
+  if(!st.running)return;const s=summary();
+  $('#stats').innerHTML=[['Durata',clock(s.durata_s)],['Secondi registrati',`${s.secondi_registrati} (${s.frazione_valida!=null?Math.round(s.frazione_valida*100):0} %)`],
+    ['L<sub>Aeq</sub> dall\'avvio',s.LAeq??'–'],['L<sub>A10</sub> · L<sub>A50</sub> · L<sub>A90</sub>',[s.LA10,s.LA50,s.LA90].map(x=>x??'–').join(' · ')],
+    ['Interruzioni',st.gaps.length?`${st.gaps.length} (in tutto ${st.gaps.reduce((a,g)=>a+g.durata_s,0).toFixed(0)} s)`:'nessuna'],
+    ['Promemoria',st.reminders.length]].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+  $('#btime').textContent=clock(s.durata_s);drawSpark();setTimeout(tick,1000);
+}
+
+/* ---------- promemoria di prova: suono + schermata ---------- */
+function remind(){
+  if(!st.running)return;const r={t:Math.round(nowS()),ora:new Date().toLocaleTimeString('it-IT'),visibile:document.visibilityState,audio:st.ctx.state};
+  st.reminders.push(r);ev('promemoria',document.visibilityState);st.remActive=true;
+  try{const o=st.ctx.createOscillator(),g=st.ctx.createGain();o.frequency.value=880;g.gain.setValueAtTime(0,st.ctx.currentTime);
+    [0,0.35,0.7].forEach(d=>{g.gain.setValueAtTime(0.5,st.ctx.currentTime+d);g.gain.setValueAtTime(0,st.ctx.currentTime+d+0.2)});
+    o.connect(g);g.connect(st.ctx.destination);o.start();o.stop(st.ctx.currentTime+1)}catch(e){r.suono='errore '+e.name}
+  setTimeout(()=>st.remActive=false,2500);
+  $('#black').hidden=true;$('#remind').hidden=false;r.mostrato=Date.now();
+}
+$('#remOk').addEventListener('click',()=>{const r=st.reminders[st.reminders.length-1];if(r)r.risposta_dopo_s=Math.round((Date.now()-r.mostrato)/1000);$('#remind').hidden=true;ev('promemoria','visto')});
+
+/* ---------- schermo nero, fine, copia ---------- */
+$('#blackBtn').addEventListener('click',()=>{$('#black').hidden=false;ev('schermo nero','on')});
+$('#black').addEventListener('click',()=>{$('#black').hidden=true;ev('schermo nero','off')});
+$('#stop').addEventListener('click',()=>{ev('fine');st.running=false;clearInterval(st.remindTimer);
+  try{st.track.stop();st.ctx.close();st.wake&&st.wake.release()}catch(e){}tickFinal();$('#stop').disabled=true;$('#blackBtn').disabled=true});
+function tickFinal(){st.running=true;tick();st.running=false}
+function results(){
+  const b0=+$('#b0').value||null,b1=+$('#b1').value||null,s=summary(),h=s.durata_s/3600;
+  return {prova:'COMFY microfono iOS',userAgent:navigator.userAgent,standalone:!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches),
+    ...st.info,schermoSempreAcceso:st.wakeInfo.replace(/<[^>]+>/g,''),batteria:{inizio:b0,fine:b1,consumo_per_ora:b0!=null&&b1!=null&&h>0?+((b0-b1)/h).toFixed(1):null},
+    riepilogo:s,interruzioni:st.gaps,promemoria:st.reminders,eventi:st.events};
+}
+$('#copy').addEventListener('click',()=>{
+  const txt=JSON.stringify(results(),null,1);const out=$('#out');out.textContent=txt;out.hidden=false;const done=m=>$('#copymsg').textContent=m;
+  const sel=()=>{const r=document.createRange();r.selectNodeContents(out);const s=getSelection();s.removeAllRanges();s.addRange(r)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>done('Risultati copiati: incollali nella chat.'),()=>{sel();done('Tieni premuto sul testo e copialo.')});
+  else{sel();done('Tieni premuto sul testo e copialo.')}
+});
+</script>
+</body>
+</html>
