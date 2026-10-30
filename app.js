@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.10.1';
+export const APP_VERSION = 'web-ios-0.11.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -342,6 +342,7 @@ function errorText(e) {
 function selfieIllustration() {
   return `<div class="ill3d"><video src="video/selfie3d_v1.mp4" poster="video/selfie3d_v1.jpg" autoplay muted loop playsinline preload="auto" aria-label="${esc(t('ill_3d'))}"></video><div class="lbl">${esc(t('ill_3d'))}</div></div>`;
 }
+const BLUR_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13" cy="12" r="6"/><path d="M3 8h3M2 12h3M3 16h3"/></svg>`;
 const GLASSES_ICON = `<svg width="22" height="14" viewBox="0 0 44 28" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="15" r="8"/><circle cx="33" cy="15" r="8"/><path d="M19 15h6M3 12 1 6M41 12l2-6"/></svg>`;
 
 /**
@@ -376,16 +377,28 @@ function showCamera(opts) {
       clearTimeout(slow);
       if (r.exif.model) S.device = `${r.exif.make} ${r.exif.model}`.trim();
       r.glassesOverride = liveOverride;
+      const reshoot = () => { const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.classList.remove('busy'); delete sh.dataset.busy; } if (camStream) startLive(); };
+      // selfie mosso: si chiede di rifarlo (con la possibilita' di usarlo comunque), come per gli occhiali
+      if (r.sharpness < L.BLUR_BLOCK && !r.blurOverride) {
+        $('#msg').innerHTML = `<div class="glass warn">${BLUR_ICON}<div>${t('blur_detected')}<small>${t('blur_exp')}</small></div></div>
+          <button class="btn out sm" id="bover" type="button">${t('blur_override')}</button>`;
+        reshoot();
+        $('#bover').onclick = () => { r.blurOverride = true; $('#msg').innerHTML = ''; afterBlur(); };
+        return;
+      }
+      afterBlur();
+      function afterBlur() {
       const g = r.glasses || { status: 'unknown' };
       if (!liveOverride && (g.status === 'detected' || g.status === 'possible')) {
         $('#msg').innerHTML = `<div class="glass warn">${GLASSES_ICON}<div>${t(g.status === 'detected' ? 'glasses_detected' : 'glasses_possible')}<small>${t('glasses_exp')}</small></div></div>
-          <button class="btn out" id="gover" type="button">${t('glasses_override')}</button>`;
+          <button class="btn out sm" id="gover" type="button">${t('glasses_override')}</button>`;
         const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.classList.remove('busy'); delete sh.dataset.busy; }
         if (camStream) startLive();
         $('#gover').onclick = () => { r.glassesOverride = true; stopCam(); opts.onDone(r, source); };
         return;
       }
       stopCam(); opts.onDone(r, source);
+      }
     } catch (err) { clearTimeout(slow); failed(err, source); }
   }
   let liveOverride = false, liveGlasses = false;
@@ -425,7 +438,7 @@ function showCamera(opts) {
         else if (liveGlasses) { live.className = 'livebar bad'; live.textContent = t(g === 'detected' ? 'glasses_detected_live' : 'glasses_possible_live'); ov.classList.add('bad'); ov.classList.remove('ok'); }
         else { live.className = 'livebar ok'; live.textContent = t('live_ready'); ov.classList.add('ok'); ov.classList.remove('bad'); }
         if (sh && !sh.dataset.busy) sh.disabled = liveGlasses;
-        if (gw) gw.innerHTML = liveGlasses ? `<div class="glass warn">${GLASSES_ICON}<div>${t(g === 'detected' ? 'glasses_detected_live' : 'glasses_possible_live')}<small>${t('glasses_exp')}</small></div></div><button class="btn out" id="lover" type="button">${t('glasses_override')}</button>` : '';
+        if (gw) gw.innerHTML = liveGlasses ? `<div class="glass warn">${GLASSES_ICON}<div>${t(g === 'detected' ? 'glasses_detected_live' : 'glasses_possible_live')}<small>${t('glasses_exp')}</small></div></div><button class="btn out sm" id="lover" type="button">${t('glasses_override')}</button>` : '';
         const lo = $('#lover'); if (lo) lo.onclick = () => { liveOverride = true; liveGlasses = false; gw.innerHTML = ''; if (sh) sh.disabled = false; };
       } catch (e) { console.warn('live', e); }
       liveTimer = setTimeout(tick, 700);
@@ -518,7 +531,7 @@ function saveCalibration(r, ref, source) {
     roi_method: PERIOCULAR_METHOD_ID, periocular_method: PERIOCULAR_METHOD_ID,
     ev_left_lux: r.evLeft, ev_right_lux: r.evRight, ev_bilateral_mean_lux: r.evMean, ev_left_right_asymmetry: r.asymmetry,
     light_aggregation_method: OFFICIAL_EV_METHOD, bilateral_diagnostic_method: BILATERAL_METHOD, light_quality_flags: flagsOf(r),
-    periocular_left_clipping_ratio: r.clipLeft, periocular_right_clipping_ratio: r.clipRight, reference_type: 'reference_phone',
+    periocular_left_clipping_ratio: r.clipLeft, periocular_right_clipping_ratio: r.clipRight, reference_type: 'reference_phone', face_sharpness: Number.isFinite(r.sharpness) ? +r.sharpness.toFixed(2) : '', blur_user_override: !!r.blurOverride,
     app_version: APP_VERSION, utc_offset: utcOffset(now),
     capture_timestamp: isoLocal(r.shotMs), selfie_age_s: Math.round(r.ageMs / 1000), lens_model: r.exif.lens, image_px: `${r.width}x${r.height}`, selfie_source: source,
     glasses_status: r.glasses ? r.glasses.status : 'unknown', glasses_confidence: r.glasses ? +r.glasses.confidence.toFixed(2) : '', glasses_user_override: !!r.glassesOverride,
@@ -797,6 +810,7 @@ function saveMeasurement() {
     reminder_timestamp: M.reminderMs ? isoLocal(M.reminderMs) : '', monitoring_started_timestamp: S.monitor.startedMs ? isoLocal(S.monitor.startedMs) : '',
     glasses_user_override: !!r.glassesOverride, calibration_kprime_compact: activeKCompact() ?? '', ...compactFields(r),
     seat_changed: !!M.seatChanged, seat_previous: M.seatPrevious || '',
+    face_sharpness: Number.isFinite(r.sharpness) ? +r.sharpness.toFixed(2) : '', face_sharpness_method: L.SHARPNESS_METHOD_ID, blur_user_override: !!r.blurOverride,
     clothing_garment: M.garmentNow || '', clothing_garment_previous: M.garmentPrevious || ''
   };
   S.measurements.push(rec); save();

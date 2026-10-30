@@ -210,7 +210,9 @@ export async function analyzeSelfie(file, opts = {}) {
     }
   } catch (e) { out.compact = null; }
   out.glasses = detectGlasses(canvas, lm);
+  try { out.sharpness = faceSharpness(canvas, xy); } catch (e) { out.sharpness = NaN; }
   const flags = [];
+  if (out.sharpness < BLUR_FLAG) flags.push('blur_suspected');
   if (clip > 0.02) flags.push('clipping_gt_0.02');
   if (!isFront) flags.push('lens_unknown');
   if (opts.referenceLux > 0) {
@@ -231,6 +233,41 @@ export async function analyzeSelfie(file, opts = {}) {
   }
   out.flags = flags.length ? flags.join('|') : 'ok';
   return out;
+}
+
+// ------------------------------------------------------------------ nitidezza del volto (selfie mosso)
+// Zona occhi-naso (1,8 x 1,1 IOD) ridotta a media di blocchi con IOD = 40 px; nitidezza = RMS del laplaciano / luminanza media x 100.
+// Il mosso abbassa il valore (prova su una foto reale con mosso sintetico: ~19 nitida, ~10 con mosso di 0,05 IOD,
+// ~7,6 con 0,1 IOD, ~5,2 con 0,2 IOD). Soglie provvisorie: segnalazione sotto 8, richiesta di rifare lo scatto sotto 5,5.
+export const SHARPNESS_METHOD_ID = 'lap_rms_over_mean_eyes_nose_iod40_v1';
+export const BLUR_FLAG = 8, BLUR_BLOCK = 5.5;
+export function faceSharpness(canvas, xy) {
+  const aC = mul(add(xy(33), xy(133)), 0.5), bC = mul(add(xy(362), xy(263)), 0.5);
+  const iod = norm(sub(bC, aC)); if (!(iod > 0)) return NaN;
+  const S = 40, sc = S / iod, cx = (aC.x + bC.x) / 2, cy = (aC.y + bC.y) / 2;
+  const ow = Math.round(1.8 * S), oh = Math.round(1.1 * S);
+  const x0 = Math.floor(cx - 0.9 * iod), y0 = Math.floor(cy - 0.35 * iod);
+  const sw = Math.ceil(1.8 * iod), sh = Math.ceil(1.1 * iod);
+  const ix0 = Math.max(0, x0), iy0 = Math.max(0, y0), ix1 = Math.min(canvas.width, x0 + sw), iy1 = Math.min(canvas.height, y0 + sh);
+  if (ix1 - ix0 < sw * 0.8 || iy1 - iy0 < sh * 0.8) return NaN;
+  const d = canvas.getContext('2d', { willReadFrequently: true }).getImageData(ix0, iy0, ix1 - ix0, iy1 - iy0).data, w = ix1 - ix0;
+  const sum = new Float64Array(ow * oh), cnt = new Float64Array(ow * oh);
+  for (let y = iy0; y < iy1; y++) {
+    const oy = Math.floor((y - y0) * sc); if (oy < 0 || oy >= oh) continue;
+    for (let x = ix0; x < ix1; x++) {
+      const ox = Math.floor((x - x0) * sc); if (ox < 0 || ox >= ow) continue;
+      const k = ((y - iy0) * w + (x - ix0)) * 4, o = oy * ow + ox;
+      sum[o] += 0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2]; cnt[o]++;
+    }
+  }
+  const Z = new Float64Array(ow * oh); let mean = 0, n = 0;
+  for (let i = 0; i < Z.length; i++) { Z[i] = cnt[i] ? sum[i] / cnt[i] : 0; if (cnt[i]) { mean += Z[i]; n++; } }
+  mean /= Math.max(1, n);
+  let e = 0, m = 0;
+  for (let y = 1; y < oh - 1; y++) for (let x = 1; x < ow - 1; x++) {
+    const i = y * ow + x, l = Z[i - 1] + Z[i + 1] + Z[i - ow] + Z[i + ow] - 4 * Z[i]; e += l * l; m++;
+  }
+  return Math.sqrt(e / m) / Math.max(10, mean) * 100;
 }
 
 /** Ritaglio della zona occhi con le ROI perioculari (ambra), come l'anteprima dell'app Android. */

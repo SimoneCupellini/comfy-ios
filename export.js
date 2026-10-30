@@ -38,7 +38,7 @@ export const COMPLETE_COLUMNS = [
   'reminder_timestamp', 'monitoring_started_timestamp', 'glasses_user_override',
   // ROI alta-guancia compatta (solo confronto, non usata per Ev)
   'ym_compact_left', 'ym_compact_right', 'ym_compact', 'roi_compact_pixels', 'roi_compact_clipping_ratio', 'roi_compact_left_right_difference', 'calibration_kprime_compact', 'ev_compact_lux', 'roi_compact_method',
-  'seat_changed', 'seat_previous', 'clothing_garment', 'clothing_garment_previous'
+  'seat_changed', 'seat_previous', 'clothing_garment', 'clothing_garment_previous', 'face_sharpness', 'face_sharpness_method', 'blur_user_override'
 ];
 
 export const ANALYSIS_COLUMNS = [
@@ -79,7 +79,7 @@ export function buildAnalysis(S) {
 }
 export const buildComplete = S => toCsv(COMPLETE_COLUMNS, S.measurements);
 export const buildCalibrations = S => {
-  const cols = ['participant_id', 'session_id', 'timestamp', 'device', 'reference_lux', 'iso', 'exposure_s', 'f_number', 'ym_left', 'ym_right', 'ym_combined', 'iod_px', 'roi_clipping_ratio', 'roi_left_right_difference', 'roi_roll_deg', 'face_quality_score', 'calibration_kprime', 'ym_periocular', 'iod_periocular_px', 'calibration_kprime_periocular', 'phone_als_lux', 'roi_method', 'periocular_method', 'ev_left_lux', 'ev_right_lux', 'ev_bilateral_mean_lux', 'ev_left_right_asymmetry', 'light_aggregation_method', 'bilateral_diagnostic_method', 'light_quality_flags', 'periocular_left_clipping_ratio', 'periocular_right_clipping_ratio', 'reference_type', 'app_version', 'utc_offset', 'capture_timestamp', 'selfie_age_s', 'lens_model', 'image_px', 'selfie_source'];
+  const cols = ['participant_id', 'session_id', 'timestamp', 'device', 'reference_lux', 'iso', 'exposure_s', 'f_number', 'ym_left', 'ym_right', 'ym_combined', 'iod_px', 'roi_clipping_ratio', 'roi_left_right_difference', 'roi_roll_deg', 'face_quality_score', 'calibration_kprime', 'ym_periocular', 'iod_periocular_px', 'calibration_kprime_periocular', 'phone_als_lux', 'roi_method', 'periocular_method', 'ev_left_lux', 'ev_right_lux', 'ev_bilateral_mean_lux', 'ev_left_right_asymmetry', 'light_aggregation_method', 'bilateral_diagnostic_method', 'light_quality_flags', 'periocular_left_clipping_ratio', 'periocular_right_clipping_ratio', 'reference_type', 'app_version', 'utc_offset', 'capture_timestamp', 'selfie_age_s', 'lens_model', 'image_px', 'selfie_source', 'face_sharpness', 'blur_user_override'];
   return toCsv(cols, S.calibrations);
 };
 

@@ -186,7 +186,7 @@ export const STR = {
       res_home: ['Torna alla Home', 'Ti riporta alla schermata principale, dove vedi quanto manca alla prossima misura.'],
       res_wait: ['Lascia il telefono sul banco', 'Non bloccare il telefono e non cambiare app: nella Home lo schermo diventa nero da solo e COMFY continua a registrare il suono. Tra 10 minuti suona per la misura successiva.']
     },
-    det_export: 'Esporta CSV', g_tshirt: 'T-shirt', g_shirt: 'Camicia', g_sweater: 'Maglione', g_jacket: 'Giacca', clo_pick: 'Cosa indossi sopra? Scorri e tocca il capo', c_5min: '5 min fa', c_now: 'ora', ill_3d: 'Altezza degli occhi · circa 30 cm', menu_lang: 'Lingua', version: 'Versione'
+    det_export: 'Esporta CSV', blur_detected: 'Il selfie sembra mosso: tieni fermo il telefono e scatta di nuovo', blur_exp: 'Con il volto sfocato la luce misurata è meno precisa', blur_override: 'Il selfie è nitido, usalo', g_tshirt: 'T-shirt', g_shirt: 'Camicia', g_sweater: 'Maglione', g_jacket: 'Giacca', clo_pick: 'Cosa indossi sopra? Scorri e tocca il capo', c_5min: '5 min fa', c_now: 'ora', ill_3d: 'Altezza degli occhi · circa 30 cm', menu_lang: 'Lingua', version: 'Versione'
   },
   en: {
     next: 'Next', back: 'Back', save: 'Save', retry: 'Try again', close: 'Close',
@@ -364,6 +364,6 @@ export const STR = {
       res_home: ['Back to home', 'Takes you back to the main screen, where you see how long until the next measurement.'],
       res_wait: ['Leave the phone on the desk', 'Do not lock the phone or switch apps: on the Home screen the screen turns black by itself and COMFY keeps recording sound. In 10 minutes it rings for the next measurement.']
     },
-    det_export: 'Export CSV', g_tshirt: 'T-shirt', g_shirt: 'Shirt', g_sweater: 'Sweater', g_jacket: 'Jacket', clo_pick: 'What are you wearing on top? Swipe and tap', c_5min: '5 min ago', c_now: 'now', ill_3d: 'Eye level · about 30 cm', menu_lang: 'Language', version: 'Version'
+    det_export: 'Export CSV', blur_detected: 'The selfie looks blurred: hold the phone still and take it again', blur_exp: 'With a blurred face the measured light is less precise', blur_override: 'The selfie is sharp, use it', g_tshirt: 'T-shirt', g_shirt: 'Shirt', g_sweater: 'Sweater', g_jacket: 'Jacket', clo_pick: 'What are you wearing on top? Swipe and tap', c_5min: '5 min ago', c_now: 'now', ill_3d: 'Eye level · about 30 cm', menu_lang: 'Language', version: 'Version'
   }
 };
