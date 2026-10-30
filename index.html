@@ -20,6 +20,7 @@
 <script>
 // Carica sempre l'ultima versione pubblicata: version.json non passa dalla cache e la versione viene aggiunta
 // all'indirizzo di tutti i file. Senza connessione si riparte dall'ultima versione salvata (service worker).
+try { const th = (JSON.parse(localStorage.getItem('comfy_web_v1') || '{}') || {}).theme; document.documentElement.dataset.theme = th === 'dark' || (th !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; } catch (e) {}
 (async () => {
   if ('serviceWorker' in navigator) { try { await navigator.serviceWorker.register('sw.js'); } catch (e) {} }
   let v = null;

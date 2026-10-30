@@ -163,6 +163,28 @@ export const STR = {
     research_sound_s: 'Secondi di suono registrati', research_tools: 'STRUMENTI DELLO STUDIO', research_send_s: '3 file: analisi, completo, suono al secondo',
     research_all: 'Esporta tutti i file', research_all_s: 'Anche calibrazioni, promemoria, misure di prova, check-in e modifiche del profilo', res_metric_ac: 'Comfort acustico',
     offline_home: 'Offline · le misure restano salvate sul telefono; per inviarle serve la connessione',
+    c_next: 'PROSSIMA MISURA', c_at: h => `alle ${h}`, c_off: 'MONITORAGGIO SPENTO', c_off_b: 'Attivalo all\'inizio della lezione',
+    c_paused: 'IN PAUSA', c_paused_b: 'Tocca «Riprendi» qui sopra', c_due: 'È ora della misura', c_due_s: (h, m) => m > 0 ? `dalle ${h} · ${m} min fa` : `dalle ${h}`,
+    c_snoozed: h => `Misura rimandata di 2 minuti · alle ${h}`, c_skipped: h => `La misura delle ${h} è stata saltata`,
+    c_listen: 'Suono in ascolto', c_rec: p => `${p} % dei secondi registrati`, c_dim: s => `Lo schermo si oscura tra ${s} s`, c_dim_now: 'Oscura ora',
+    th_title_menu: 'Tema', th_auto: 'Automatico (iPhone)', th_light: 'Chiaro', th_dark: 'Scuro', th_to_dark: 'Passa al tema scuro', th_to_light: 'Passa al tema chiaro',
+    lang_btn: 'Cambia lingua', tut_menu: 'Tutorial',
+    coach_skip: 'Salta tutorial', coach_next: 'Avanti', coach_done: 'Ho capito', coach_counter: (n, N) => `${n} di ${N}`,
+    coach: {
+      home_ring: ['Prossima misura', 'L\'anello si riempie verso la prossima misura e al centro vedi i minuti che mancano. Ogni 10 minuti il telefono suona: quando l\'anello diventa arancione tocca «Inizia la misura».'],
+      home_monitor: ['Monitoraggio continuo', 'Attivalo all\'inizio della lezione e lascialo acceso fino alla fine: COMFY registra il suono e ogni 10 minuti ti chiama per la misura. Tieni COMFY aperto e non bloccare il telefono: lo schermo diventa nero da solo ma resta acceso.'],
+      home_sound: ['Suono in ascolto', 'Qui vedi il livello del suono in questo momento e quanti secondi sono stati registrati. Se il suono si ferma compare «Riprendi il monitoraggio».'],
+      home_voluntary: ['Segnala come ti senti', 'Usalo se senti un cambiamento nelle tue sensazioni, per esempio se cambia la luce o il rumore. Il conto alla rovescia dei 10 minuti riparte da questa misura.'],
+      home_look: ['Tema e lingua', 'Con la luna passi al tema scuro, con il sole torni a quello chiaro. Con IT / EN cambi lingua.'],
+      home_menu: ['Menu', 'Qui trovi l\'invio dei dati al ricercatore, il profilo, le istruzioni e questo tutorial.'],
+      pre: ['Prima della misura', 'Rispondi se hai cambiato abbigliamento e, più sotto, se hai cambiato posizione nell\'aula.'],
+      cam: ['Il selfie', 'Tieni il telefono all\'altezza degli occhi e inquadra il volto nell\'ovale. Quando la barra in basso diventa verde tocca «Scatta». Se porti gli occhiali, toglili.'],
+      gsv: ['Abbagliamento', 'Trascina il cursore fino al punto che descrive quanto ti dà fastidio la luce in questo momento.'],
+      tsv: ['Sensazione termica', 'Sposta il cursore da freddo a caldo, poi rispondi alle due domande sul comfort termico. Le domande sul suono sono nella pagina successiva.'],
+      res_data: ['I tuoi dati', 'Tocca qui per vedere i dati di questa misura.'],
+      res_home: ['Torna alla Home', 'Ti riporta alla schermata principale, dove vedi quanto manca alla prossima misura.'],
+      res_wait: ['Lascia il telefono sul banco', 'Non bloccare il telefono e non cambiare app: nella Home lo schermo diventa nero da solo e COMFY continua a registrare il suono. Tra 10 minuti suona per la misura successiva.']
+    },
     menu_lang: 'Lingua', version: 'Versione'
   },
   en: {
@@ -318,6 +340,28 @@ export const STR = {
     research_sound_s: 'Seconds of sound recorded', research_tools: 'STUDY TOOLS', research_send_s: '3 files: analysis, complete, per-second sound',
     research_all: 'Export all files', research_all_s: 'Also calibrations, reminders, test measurements, check-in and profile changes', res_metric_ac: 'Acoustic comfort',
     offline_home: 'Offline · measurements stay saved on the phone; sending them needs a connection',
+    c_next: 'NEXT MEASUREMENT', c_at: h => `at ${h}`, c_off: 'MONITORING OFF', c_off_b: 'Turn it on at the start of the lecture',
+    c_paused: 'PAUSED', c_paused_b: 'Tap «Resume» above', c_due: 'Time for the measurement', c_due_s: (h, m) => m > 0 ? `since ${h} · ${m} min ago` : `since ${h}`,
+    c_snoozed: h => `Measurement postponed by 2 minutes · at ${h}`, c_skipped: h => `The measurement at ${h} was skipped`,
+    c_listen: 'Listening to sound', c_rec: p => `${p} % of seconds recorded`, c_dim: s => `The screen dims in ${s} s`, c_dim_now: 'Dim now',
+    th_title_menu: 'Theme', th_auto: 'Automatic (iPhone)', th_light: 'Light', th_dark: 'Dark', th_to_dark: 'Switch to dark theme', th_to_light: 'Switch to light theme',
+    lang_btn: 'Change language', tut_menu: 'Tutorial',
+    coach_skip: 'Skip tutorial', coach_next: 'Next', coach_done: 'Got it', coach_counter: (n, N) => `${n} of ${N}`,
+    coach: {
+      home_ring: ['Next measurement', 'The ring fills up towards the next measurement and the centre shows the minutes left. Every 10 minutes the phone rings: when the ring turns orange tap «Start the measurement».'],
+      home_monitor: ['Continuous monitoring', 'Turn it on at the start of the lecture and keep it on until the end: COMFY records sound and calls you for a measurement every 10 minutes. Keep COMFY open and do not lock the phone: the screen turns black by itself but stays on.'],
+      home_sound: ['Listening to sound', 'Here you see the current sound level and how many seconds were recorded. If sound stops, «Resume monitoring» appears.'],
+      home_voluntary: ['Report how you feel', 'Use it if you feel a change, for example if the light or the noise changes. The 10-minute countdown restarts from this measurement.'],
+      home_look: ['Theme and language', 'The moon switches to the dark theme, the sun back to the light one. IT / EN changes the language.'],
+      home_menu: ['Menu', 'Here you find sending data to the researcher, your profile, the instructions and this tutorial.'],
+      pre: ['Before the measurement', 'Answer whether you changed clothing and, further down, whether you changed position in the room.'],
+      cam: ['The selfie', 'Hold the phone at eye level and frame your face in the oval. When the bar at the bottom turns green tap «Take photo». If you wear glasses, take them off.'],
+      gsv: ['Glare', 'Drag the slider to the point that describes how much the light bothers you right now.'],
+      tsv: ['Thermal sensation', 'Move the slider from cold to hot, then answer the two thermal comfort questions. The sound questions are on the next page.'],
+      res_data: ['Your data', 'Tap here to see the data of this measurement.'],
+      res_home: ['Back to home', 'Takes you back to the main screen, where you see how long until the next measurement.'],
+      res_wait: ['Leave the phone on the desk', 'Do not lock the phone or switch apps: on the Home screen the screen turns black by itself and COMFY keeps recording sound. In 10 minutes it rings for the next measurement.']
+    },
     menu_lang: 'Language', version: 'Version'
   }
 };

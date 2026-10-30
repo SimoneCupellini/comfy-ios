@@ -7,9 +7,10 @@ const { SoundEngine, AUDIO_SOURCE } = await import('./sound.js' + VQ);
 const X = await import('./export.js' + VQ);
 const { createDiagram } = await import('./diagram.js' + VQ);
 const INS = await import('./instructions.js' + VQ);
+const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.6.0';
+export const APP_VERSION = 'web-ios-0.7.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -41,6 +42,15 @@ save();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
 const lang = () => S.lang || ((navigator.language || 'it').startsWith('it') ? 'it' : 'en');
+// tema: automatico (come l'iPhone), chiaro o scuro; si cambia dalla Home (luna / sole) o dal menu
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+const themeEff = () => (S.theme === 'dark' || (S.theme !== 'light' && darkMQ.matches)) ? 'dark' : 'light';
+function applyTheme() {
+  const th = themeEff(); document.documentElement.dataset.theme = th;
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = th === 'dark' ? '#141110' : '#FAF6F3';
+}
+applyTheme();
+try { darkMQ.addEventListener('change', () => { applyTheme(); if ($('#home') && !inFlow) showHome(); }); } catch (e) { }
 const t = (k, ...a) => { const v = STR[lang()][k] ?? STR.it[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
 function utcOffset(ms = Date.now()) { const m = -new Date(ms).getTimezoneOffset(), s = m >= 0 ? '+' : '-', a = Math.abs(m); return `${s}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`; }
 function isoLocal(ms = Date.now()) { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${utcOffset(ms)}`; }
@@ -104,7 +114,12 @@ function roomSvg(r, sel) {
 
 // ------------------------------------------------------------------ interfaccia
 const LOGO = `<svg viewBox="0 0 108 108" width="30" height="30" aria-hidden="true"><rect width="108" height="108" rx="26" fill="#A4472B"/><path d="M37.4 39.57A22 22 0 0 1 70.6 39.57" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M74.8 46.84A22 22 0 0 1 58.2 75.6" stroke="#FFD9C7" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M49.8 75.6A22 22 0 0 1 33.2 46.84" stroke="#F7B49B" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="54" cy="54" r="6.5" fill="#fff"/></svg>`;
-const topbar = (menu = false) => `<div class="top">${LOGO}<div class="ttl">COMFY</div>${menu ? `<button class="mbtn" id="menub" type="button" aria-label="${t('menu')}"><i></i></button>` : (inFlow ? '' : `<button class="lang" id="lang" type="button">${lang() === 'it' ? 'IT' : 'EN'}</button>`)}</div>`;
+const MOON_I = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`;
+const SUN_I = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>`;
+const langBtn = (cls = '') => `<button class="lang ${cls}" id="lang" type="button" aria-label="${t('lang_btn')}">${lang() === 'it' ? 'IT' : 'EN'}</button>`;
+const topbar = (menu = false) => `<div class="top">${LOGO}<div class="ttl">COMFY</div>${menu === 'home'
+  ? `<div class="flex" id="tlbox" style="gap:8px"><button class="tbtn" id="themeb" type="button" aria-label="${themeEff() === 'dark' ? t('th_to_light') : t('th_to_dark')}">${themeEff() === 'dark' ? SUN_I : MOON_I}</button>${langBtn('h36')}</div>` : ''}${menu
+  ? `<button class="mbtn" id="menub" type="button" aria-label="${t('menu')}"><i></i></button>` : (inFlow ? '' : langBtn())}</div>`;
 const IC = {
   share: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A7AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>`,
   plus: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
@@ -115,9 +130,18 @@ const IC = {
   eye: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
   user: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>`,
   send: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>`,
-  ok: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>`
+  ok: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>`,
+  face: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r=".8"/><circle cx="15" cy="10" r=".8"/><path d="M8.5 14.5q3.5 3 7 0"/></svg>`,
+  moon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`,
+  globe: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>`,
+  help: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5V14"/><circle cx="12" cy="17.2" r=".6"/></svg>`
 };
-function screen(html) { app.innerHTML = html; window.scrollTo(0, 0); const l = $('#lang'); if (l) l.onclick = () => { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); }; const m = $('#menub'); if (m) m.onclick = showMenu; }
+function screen(html) {
+  app.innerHTML = html; window.scrollTo(0, 0);
+  const l = $('#lang'); if (l) l.onclick = () => { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); };
+  const m = $('#menub'); if (m) m.onclick = showMenu;
+  const th = $('#themeb'); if (th) th.onclick = () => { S.theme = themeEff() === 'dark' ? 'light' : 'dark'; save(); applyTheme(); route(); };
+}
 const card = (ic, h, s, cls = '') => `<div class="card ${cls}"><div class="flex"><div class="ic">${ic}</div><div><div class="h">${h}</div><div class="s">${s}</div></div></div></div>`;
 const errBox = msg => `<div class="err" role="alert">${esc(msg)}</div>`;
 
@@ -344,7 +368,7 @@ function showCamera(opts) {
       <button class="btn" id="shoot" type="button" disabled>${t('cam_shoot')}</button>${pickLabel(true, true)}${back}</main>`);
     bindCommon();
     $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('cam_starting')}</div>`;
-    L.startCamera($('#vid')).then(st => { camStream = st; $('#msg').innerHTML = ''; $('#shoot').disabled = false; startLive(); })
+    L.startCamera($('#vid')).then(st => { camStream = st; $('#msg').innerHTML = ''; $('#shoot').disabled = false; startLive(); if (M) setTimeout(() => startCoach('cam', '.camwrap'), 500); })
       .catch(err => { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; });
     $('#shoot').onclick = async () => {
       if (!camStream) return;
@@ -525,11 +549,11 @@ async function startMonitoring() {
 function stopMonitoring() { S.monitor.running = false; S.monitor.endedMs = Date.now(); save(); sound.stop(); try { wake && wake.release(); } catch (e) { } hideBlack(); showHome(); }
 function monitoringPaused() { return S.monitor.running && !sound.running(); }
 
-function armIdle() { clearTimeout(idleTimer); idleAt = 0; if (S.monitor.running && !inFlow && !S.monitor.pending && sound.running()) { idleAt = Date.now() + 20000; idleTimer = setTimeout(() => { if (!inFlow && $('#home')) showBlack(); }, 20000); } }
+function armIdle() { clearTimeout(idleTimer); idleAt = 0; if (C.isActive()) return; if (S.monitor.running && !inFlow && !S.monitor.pending && sound.running()) { idleAt = Date.now() + 20000; idleTimer = setTimeout(() => { if (!inFlow && $('#home')) showBlack(); }, 20000); } }
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => armIdle(), { passive: true }));
 
 function showBlack() {
-  if (!S.monitor.running || inFlow || S.monitor.pending) return;
+  if (!S.monitor.running || inFlow || S.monitor.pending || C.isActive()) return;
   let b = $('#black');
   if (!b) { b = document.createElement('div'); b.id = 'black'; document.body.appendChild(b); b.onclick = () => { hideBlack(); showHome(); armIdle(); }; }
   b.hidden = false; renderBlack();
@@ -553,7 +577,7 @@ function logReminder(dueMs, action) {
 }
 function showReminder(dueMs) {
   if (reminderOpen) return;
-  hideBlack();
+  C.stop(); hideBlack();
   if (!S.monitor.pending || S.monitor.pending.dueMs !== dueMs) { S.monitor.pending = { dueMs, shownMs: Date.now() }; S.reminders.push({ due: isoLocal(dueMs), shown: isoLocal(), action: '' }); }
   S.monitor.snoozed = false; save();
   reminderOpen = dueMs;
@@ -584,7 +608,7 @@ let M = null;
 function startMeasurement(trigger, reminderMs) {
   if (!activeK()) return showCalGuide(true);
   const now = Date.now();
-  inFlow = true; hideBlack(); clearTimeout(idleTimer);
+  inFlow = true; C.stop(); hideBlack(); clearTimeout(idleTimer);
   M = { id: uuid(), trigger, anchorMs: trigger === 'scheduled' && reminderMs ? Math.min(reminderMs, now) : now, reminderMs: reminderMs || null };
   if (S.monitor.running) {   // il prossimo promemoria parte da questa misura
     if (S.monitor.pending && trigger === 'scheduled') logReminder(S.monitor.pending.dueMs, 'started');
@@ -604,7 +628,7 @@ function stepClothing() {
   const yn = (k, v) => `<div class="seg"><button type="button" data-${k}="no" class="${v === false ? 'on' : ''}">${t('no')}</button><button type="button" data-${k}="yes" class="${v === true ? 'on' : ''}">${t('yes')}</button></div>`;
   const draw = () => {
     screen(`<main class="body">${topbar()}<div class="step">${eyebrow(1)}</div>
-      <h1>${t('clo_title')}</h1><p class="t">${t('clo_current', cloLabel(cur))}</p>${yn('v', changed)}
+      <div id="cloyn"><h1>${t('clo_title')}</h1><p class="t">${t('clo_current', cloLabel(cur))}</p>${yn('v', changed)}</div>
       ${changed ? `<div class="lab">${t('clo_now')}</div><div class="seg" id="clo">${[['light', t('clo_l'), t('clo_ls')], ['medium', t('clo_m'), t('clo_ms')], ['heavy', t('clo_h'), t('clo_hs')]].map(([v, l, s]) => `<button type="button" data-c="${v}" class="${now === v ? 'on' : ''}">${l}<small>${s}</small></button>`).join('')}</div>` : ''}
       <h2 class="q2">${t('pos_title')}</h2><p class="t">${t('pos_current', t('seat_chosen', seat.rows, seat.seats))}</p>${yn('m', moved)}
       ${moved ? `<p class="t small">${t('pos_next')}</p>` : ''}
@@ -622,6 +646,7 @@ function stepClothing() {
     bindCancel(endFlow);
   };
   draw();
+  setTimeout(() => startCoach('pre', '#cloyn'), 350);
 }
 function stepSelfie() {
   showCamera({ eyebrow: eyebrow(2), title: t('cam_title'), analyze: f => analyzeSelfie(f, { kPrime: activeK(), kPrimeCompact: activeKCompact() }),
@@ -630,7 +655,7 @@ function stepSelfie() {
 function stepGsv() {
   let solar = M.solar ?? null;
   screen(`<main class="body">${topbar()}<div class="step">${eyebrow(3)}</div><h1>${t('gsv_title')}</h1><p class="t">${t('gsv_body')}</p>
-    <div class="card">${gsvSlider('gsv', M.gsv ?? 0)}</div>
+    <div class="card" id="gsvcard">${gsvSlider('gsv', M.gsv ?? 0)}</div>
     <div class="lab">${t('solar_q')}</div><div class="seg" id="sol"><button type="button" data-s="1" class="${solar === true ? 'on' : ''}">${t('yes')}</button><button type="button" data-s="0" class="${solar === false ? 'on' : ''}">${t('no')}</button></div>
     <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${cancelBtn}</main>`);
   const get = bindGsv('gsv');
@@ -641,6 +666,7 @@ function stepGsv() {
     if (gsvLevel(M.gsv) <= 0) { M.glare = false; M.glareCtx = { shown: false, skip: 'gsv_imperceptible' }; stepThermal(); } else { M.glare = true; stepGlare(); }
   };
   bindCancel(stepSelfie);
+  setTimeout(() => startCoach('gsv', '#gsvcard'), 350);
 }
 function stepGlare() {
   let none = false, type = null, area = null;
@@ -678,7 +704,7 @@ function stepThermal() {
   let pref = M.pref ?? null, acc = M.acc ?? null;
   const tsv = STR[lang()].tsv, pl = STR[lang()].pref;
   screen(`<main class="body">${topbar()}<div class="step">${eyebrow(n)}</div><h1>${t('th_title')}</h1>
-    <div class="card"><div class="h">${t('tsv_q')}</div>${scaleSlider('tsv', M.tsv ?? 0, tsv, 'linear-gradient(90deg,#4F86C6,#E9E2DC 50%,#D9644A)')}</div>
+    <div class="card" id="tsvcard"><div class="h">${t('tsv_q')}</div>${scaleSlider('tsv', M.tsv ?? 0, tsv, 'linear-gradient(90deg,#4F86C6,#E9E2DC 50%,#D9644A)')}</div>
     <div class="lab">${t('pref_q')}</div><div class="seg">${Object.entries(pl).map(([k, v]) => `<button type="button" data-p="${k}" class="${pref === k ? 'on' : ''}">${v}</button>`).join('')}</div>
     <div class="lab">${t('acc_q')}</div><div class="seg"><button type="button" data-a="1" class="${acc === true ? 'on' : ''}">${t('yes')}</button><button type="button" data-a="0" class="${acc === false ? 'on' : ''}">${t('no')}</button></div>
     <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${cancelBtn}</main>`);
@@ -690,6 +716,7 @@ function stepThermal() {
     M.tsv = get(); M.pref = pref; M.acc = acc; M.thermalMs = Date.now(); stepAcoustic();
   };
   bindCancel(() => M.glare ? stepGlare() : stepGsv());
+  setTimeout(() => startCoach('tsv', '#tsvcard'), 350);
 }
 function stepAcoustic() {
   const n = M.glare ? 6 : 5;
@@ -767,6 +794,7 @@ function showResult(rec, metrics) {
     <button class="linkbtn" id="det" type="button">${t('res_details')}</button></main>`);
   $('#go').onclick = endFlow;
   $('#det').onclick = () => showDetails(rec, () => showResult(rec, metrics));
+  setTimeout(() => startCoach('result', '.result'), 900);
 }
 function showDetails(rec, back) {
   const n = (x, dd = 0) => x === '' || x == null ? '–' : fmt(+x, dd);
@@ -780,7 +808,7 @@ function showDetails(rec, back) {
     <p class="t small">${t('det_note')}</p><div class="spacer"></div><button class="btn out" id="back" type="button">${t('back')}</button></main>`);
   $('#back').onclick = back;
 }
-function endFlow() { stopCam(); M = null; inFlow = false; showHome(); if (S.monitor.running && sound.running()) setTimeout(showBlack, 1500); armIdle(); }
+function endFlow() { C.stop(); stopCam(); M = null; inFlow = false; showHome(); if (S.monitor.running && sound.running()) setTimeout(showBlack, 1500); armIdle(); }
 
 // ------------------------------------------------------------------ invio dei dati
 function dayStr(ms = Date.now()) { return isoLocal(ms).slice(0, 10); }
@@ -856,65 +884,108 @@ function showResearch() {
   };
 }
 
-// ------------------------------------------------------------------ Home (proposta B: il suono al centro)
-const DIAL_MIN = 0, DIAL_MAX = 80;
-function dialSvg(v, dim) {
-  const r = 80, cx = 100, cy = 100, p = Number.isFinite(v) ? Math.max(0, Math.min(1, (v - DIAL_MIN) / (DIAL_MAX - DIAL_MIN))) : 0, ang = Math.PI * (1 - p);
-  const arc = (f, to, col, w) => `<path d="M${cx + r * Math.cos(f)} ${cy - r * Math.sin(f)} A${r} ${r} 0 0 1 ${cx + r * Math.cos(to)} ${cy - r * Math.sin(to)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
-  return `<svg width="200" height="116" viewBox="0 0 200 116" aria-hidden="true">${arc(Math.PI, 0, '#EBD9CF', 12)}${p > 0.005 ? arc(Math.PI, ang, dim ? '#C9BBB2' : '#A4472B', 12) : ''}</svg>`;
+// ------------------------------------------------------------------ Home (proposta C: il quadrante dei 10 minuti)
+const BELL = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`;
+const MOON_S = MOON_I.replace(/width="18" height="18"/, 'width="13" height="13"');
+function ringSvg(p, col, dim) {
+  const size = 204, sw = 11, c0 = size / 2, r = c0 - sw / 2 - 2, c = 2 * Math.PI * r;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${c0}" cy="${c0}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>${p > 0.003
+    ? `<circle cx="${c0}" cy="${c0}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${c0} ${c0})"${dim ? ' opacity=".35"' : ''}/>` : ''}</svg>`;
 }
-function sparkSvg() {
-  const end = Math.floor(Date.now() / 1000), pts = sound.history.filter(s => s.e > end - 300 && Number.isFinite(s.la));
-  if (pts.length < 5) return '<svg class="spark" width="100%" height="34"></svg>';
-  const lo = Math.min(...pts.map(s => s.la)) - 2, hi = Math.max(...pts.map(s => s.la)) + 2, W = 300, H = 34;
-  const d = pts.map(s => `${((s.e - (end - 300)) / 300 * W).toFixed(1)},${(H - (s.la - lo) / (hi - lo) * H).toFixed(1)}`).join(' ');
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}"><polyline fill="none" stroke="#A4472B" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${d}"/></svg>`;
-}
-function statePill() {
+function ringState() {
   const mon = S.monitor, now = Date.now();
-  if (mon.pending) return `<span class="pl due">${t('b_due', hhmm(mon.pending.dueMs))}</span>`;
-  if (mon.lastSkipped && now < mon.lastSkipped.nextMs) return `<span class="pl warn">${t('b_skipped', hhmm(mon.lastSkipped.dueMs), hhmm(mon.lastSkipped.nextMs))}</span>`;
-  if (mon.snoozed) return `<span class="pl br">${t('b_snoozed', hhmm(mon.nextDueMs))}</span>`;
-  return `<span class="pl br">${t('b_next', hhmm(mon.nextDueMs), Math.max(0, Math.ceil((mon.nextDueMs - now) / 60000)))}</span>`;
+  if (!mon.running) return { p: 0, inner: `<div class="rlbl">${t('c_off')}</div><div class="roff">${t('c_off_b')}</div>` };
+  if (mon.pending) {
+    const m = Math.max(0, Math.floor((now - mon.pending.dueMs) / 60000));
+    return { p: 1, col: 'var(--due)', inner: `<div class="bell">${BELL}</div><div class="rdue">${t('c_due')}</div><div class="rat">${t('c_due_s', hhmm(mon.pending.dueMs), m)}</div>` };
+  }
+  const tot = (mon.snoozed ? 2 : INTERVAL_MIN) * 60000, rem = Math.max(0, (mon.nextDueMs || now) - now), p = Math.max(0, Math.min(1, 1 - rem / tot));
+  if (monitoringPaused()) return { p, col: 'var(--mute)', dim: true, inner: `<div class="rlbl">${t('c_paused')}</div><div class="roff">${t('c_paused_b')}</div>` };
+  const big = rem >= 60000 ? `${Math.ceil(rem / 60000)}<small> min</small>` : `${Math.ceil(rem / 1000)}<small> s</small>`;
+  return { p, col: 'var(--brand)', inner: `<div class="rlbl br">${t('c_next')}</div><div class="rmin">${big}</div><div class="rat">${t('c_at', hhmm(mon.nextDueMs))}</div>` };
 }
+function ringHtml() { const rs = ringState(); return `<div class="ringbox" id="ring" role="timer">${ringSvg(rs.p, rs.col, rs.dim)}<div class="ringin">${rs.inner}</div></div>`; }
+function barsSvg() {
+  const n = 30, end = Math.floor(Date.now() / 1000), W = 300, H = 30, bw = W / n;
+  const m = new Map(sound.history.filter(x => x.e > end - n).map(x => [x.e, x.la]));
+  let o = '';
+  for (let i = 0; i < n; i++) {
+    const la = m.get(end - n + 1 + i), ok = Number.isFinite(la), v = ok ? Math.max(0.1, Math.min(1, (la - 20) / 60)) : 0.06, h = Math.max(3, H * v);
+    o += `<rect x="${(i * bw + bw * 0.2).toFixed(1)}" y="${((H - h) / 2).toFixed(1)}" width="${(bw * 0.6).toFixed(1)}" height="${h.toFixed(1)}" rx="${(bw * 0.3).toFixed(1)}" fill="var(--brand)" opacity="${ok ? (0.35 + 0.65 * v).toFixed(2) : 0.2}"/>`;
+  }
+  return `<svg class="bars" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${o}</svg>`;
+}
+const laText = () => Number.isFinite(sound.lastLa) ? fmt(sound.lastLa, 0) + ' dB' : '– dB';
+const recPct = () => Math.round(sound.fracValid(300) * 100);
+const sndCard = () => `<div class="card sndcard" id="snd"><div class="sndrow"><span class="s"><span class="dot"></span>${t('c_listen')}</span><span class="sndv" id="sndv">${laText()}</span></div>
+  <div id="bars">${barsSvg()}</div><div class="tiny" style="text-align:right" id="recf">${t('c_rec', recPct())}</div></div>`;
+function chipText() {
+  const mon = S.monitor, now = Date.now();
+  if (!mon.running || monitoringPaused() || mon.pending) return '';
+  if (mon.lastSkipped && now < mon.lastSkipped.nextMs) return t('c_skipped', hhmm(mon.lastSkipped.dueMs));
+  if (mon.snoozed) return t('c_snoozed', hhmm(mon.nextDueMs));
+  return '';
+}
+const homeSigNow = () => [S.monitor.running, monitoringPaused(), !!S.monitor.pending, chipText(), lang(), themeEff()].join('|');
+let homeSig = '', ringInner = '';
 function showHome() {
   const mon = S.monitor, today = dayStr();
   const todays = S.measurements.filter(m => (m.capture_timestamp || '').startsWith(today)), last = todays[todays.length - 1];
-  const paused = monitoringPaused(), live = mon.running && !paused;
-  const la = sound.lastLa;
+  const paused = monitoringPaused(), live = mon.running && !paused, chip = chipText();
   const pausedHero = `<div class="warnhero"><div class="h">${t('mon_paused', hhmm(mon.pausedSinceMs || Date.now()))}</div><p class="t" style="margin:4px 0 10px">${t('mon_rules')}</p><button class="btn" id="start" type="button">${t('mon_resume')}</button></div>`;
-  let hero;
-  if (!mon.running) hero = `<div class="hero dialhero"><div class="dial">${dialSvg(NaN)}<div class="v"><b>–</b><span>${t('b_sound_now')}</span></div></div>
-      <div class="pillrow"><span class="pl">${t('b_not_active')}</span></div><p class="t small" style="margin:10px 0 2px">${t('mon_start_s')}</p></div>`;
-  else if (paused) hero = `${pausedHero}<div class="hero dialhero"><div class="dial">${dialSvg(NaN, true)}<div class="v"><b>–</b><span>${t('b_sound_now')}</span></div></div><div class="pillrow"><span class="pl warn">${t('b_paused')}</span></div></div>`;
-  else hero = `<div class="hero dialhero"><div class="dial" id="dial">${dialSvg(la)}<div class="v"><b id="dialv">${Number.isFinite(la) ? fmt(la, 0) : '–'}</b><span>${t('b_sound_now')}</span></div></div>
-      <div id="spark">${sparkSvg()}</div><div class="pillrow" id="pills">${statePill()}<span class="pl" id="rec">${t('b_rec', Math.round(sound.fracValid(300) * 100))}</span></div></div>
-      ${mon.pending ? `<button class="btn" id="go" type="button">${t('b_go')}</button>` : `<div class="dimhint" id="dimhint">${dimHint()}</div>`}`;
   const sw = `<div class="card swcard"><div class="flex"><div class="ic">${IC.mic}</div><div style="flex:1"><div class="h">${t('mon_switch')}</div><div class="s">${!mon.running ? t('mon_switch_off') : paused ? t('b_paused') : t('mon_switch_on')}</div></div>
       <button class="sw ${mon.running ? 'on' : ''}" id="sw" type="button" role="switch" aria-checked="${mon.running}" aria-label="${t('mon_switch')}"><i></i></button></div></div>`;
+  const vol = `<button class="card action ${live ? 'blink' : ''}" id="vol" type="button"><div class="flex"><div class="ic">${IC.face}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>`;
+  const todayCard = `<div class="card today"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${todays.length ? t('b_today', todays.length) : t('b_today_none')}</div>
+      <div class="s">${last ? t('b_last', last.capture_timestamp.slice(11, 16), fmt(+last.ev_lux)) : t('seat_chosen', S.profile.seat.rows, S.profile.seat.seats)}</div></div></div></div>`;
+  const dim = `<button class="dimhint" id="dimhint" type="button">${MOON_S}<span id="dimt">${dimText()}</span></button>`;
   const off = navigator.onLine === false ? `<div class="offchip">${t('offline_home')}</div>` : '';
-  screen(`<main class="body" id="home">${topbar(true)}${off}${hero}${sw}<div id="msg"></div>
-    <button class="card action blink" id="vol" type="button"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>
-    <div class="card"><div class="h">${todays.length ? t('b_today', todays.length) : t('b_today_none')}</div>
-      <div class="s">${last ? t('b_last', last.capture_timestamp.slice(11, 16), fmt(+last.ev_lux)) : t('seat_chosen', S.profile.seat.rows, S.profile.seat.seats)}</div></div>
+  const body = live && mon.pending
+    ? `${ringHtml()}<button class="btn" id="go" type="button">${t('b_go')}</button>${sndCard()}${sw}<div id="msg"></div>`
+    : `${paused ? pausedHero : ''}${ringHtml()}${chip ? `<div class="cchip" id="cchip">${chip}</div>` : ''}${live ? sndCard() : ''}${sw}<div id="msg"></div>${vol}${live ? dim : ''}${todayCard}`;
+  screen(`<main class="body" id="home">${topbar('home')}${off}${body}
     <div class="foot">${t('version')} ${APP_VERSION} · ${S.participant_id}</div></main>`);
+  homeSig = homeSigNow(); ringInner = ringState().inner;
   const st = $('#start'); if (st) st.onclick = startMonitoring;
   const dh = $('#dimhint'); if (dh) dh.onclick = showBlack;
   const go = $('#go'); if (go) go.onclick = () => startMeasurement('scheduled', mon.pending.dueMs);
-  $('#vol').onclick = () => startMeasurement('user_initiated');
+  const v = $('#vol'); if (v) v.onclick = () => startMeasurement('user_initiated');
   $('#sw').onclick = () => mon.running ? confirmStop() : startMonitoring();
+  if (!(S.coachSeen && S.coachSeen.home)) setTimeout(() => startCoach('home', '#home'), 500);
 }
-let sparkTick = 0, idleAt = 0;
-function dimHint() { const s = Math.max(0, Math.ceil((idleAt - Date.now()) / 1000)); return idleAt && s > 0 ? t('dim_in', s) : t('dim_tap'); }
+let idleAt = 0;
+function dimText() { const s = Math.max(0, Math.ceil((idleAt - Date.now()) / 1000)); return idleAt && s > 0 ? t('c_dim', s) : t('c_dim_now'); }
 function updateHome() {
-  if (!$('#home') || !S.monitor.running || monitoringPaused()) return;
-  const la = sound.lastLa, v = $('#dialv'), d = $('#dial');
-  if (v) v.textContent = Number.isFinite(la) ? fmt(la, 0) : '–';
-  if (d) d.firstElementChild.outerHTML = dialSvg(la);
-  const p = $('#pills'); if (p) p.innerHTML = `${statePill()}<span class="pl" id="rec">${t('b_rec', Math.round(sound.fracValid(300) * 100))}</span>`;
-  const dh = $('#dimhint'); if (dh) dh.textContent = dimHint();
-  if (++sparkTick % 5 === 0) { const s = $('#spark'); if (s) s.innerHTML = sparkSvg(); }
+  if (!$('#home')) return;
+  if (homeSigNow() !== homeSig) { if (!document.getElementById('menu') && !($('#msg') && $('#msg').innerHTML)) showHome(); return; }
+  if (!S.monitor.running) return;
+  const rs = ringState(), r = $('#ring');
+  if (r) { r.firstElementChild.outerHTML = ringSvg(rs.p, rs.col, rs.dim); if (rs.inner !== ringInner) { r.lastElementChild.innerHTML = rs.inner; ringInner = rs.inner; } }
+  const v = $('#sndv'); if (v) v.textContent = laText();
+  const b = $('#bars'); if (b) b.innerHTML = barsSvg();
+  const f = $('#recf'); if (f) f.textContent = t('c_rec', recPct());
+  const d = $('#dimt'); if (d) d.textContent = dimText();
 }
+
+// ------------------------------------------------------------------ tutorial (come i CoachMarks dell'app Android)
+const COACH_SEQ = {
+  home: [['#ring', 'home_ring'], ['.swcard', 'home_monitor'], ['#snd', 'home_sound'], ['#vol', 'home_voluntary'], ['#tlbox', 'home_look'], ['#menub', 'home_menu']],
+  pre: [['#cloyn', 'pre']], cam: [['.camwrap', 'cam']], gsv: [['#gsvcard', 'gsv']], tsv: [['#tsvcard', 'tsv']],
+  result: [['#det', 'res_data'], ['#go', 'res_home'], [null, 'res_wait']]
+};
+function startCoach(key, guard) {
+  if (!S.coachSeen) S.coachSeen = {};
+  if (S.coachSeen[key] || C.isActive() || reminderOpen || document.getElementById('menu') || (guard && !document.querySelector(guard))) return;
+  const bl = $('#black'); if (bl && !bl.hidden) return;
+  let seq = COACH_SEQ[key];
+  if (key === 'result' && !S.monitor.running) seq = seq.slice(0, 2);
+  const co = STR[lang()].coach;
+  const ok = C.run(seq.map(([sel, k]) => ({ sel, title: co[k][0], body: co[k][1] })),
+    { skip: t('coach_skip'), next: t('coach_next'), done: t('coach_done'), counter: (n, N) => t('coach_counter', n, N) },
+    completed => { if (completed) { S.coachSeen[key] = Date.now(); save(); } armIdle(); });
+  if (ok) { clearTimeout(idleTimer); idleAt = 0; }
+}
+
 function confirmStop() {
   const m = $('#msg');
   m.innerHTML = `<div class="card"><p class="t" style="margin-bottom:10px">${t('mon_stop_confirm')}</p><div class="seg"><button type="button" id="sy">${t('mon_stop_yes')}</button><button type="button" id="sn" class="on">${t('mon_stop_no')}</button></div></div>`;
@@ -924,6 +995,7 @@ function confirmStop() {
 // ------------------------------------------------------------------ menu
 function showMenu() {
   hideBlack();
+  C.stop();
   const el = document.createElement('div'); el.id = 'menu';
   el.innerHTML = `<div class="dim"></div><nav class="sheet" aria-label="${t('menu')}">
     <div class="sec">${t('m_data')}</div>
@@ -934,8 +1006,10 @@ function showMenu() {
     <button type="button" data-a="test"><span class="ic">${IC.sun}</span>${t('home_test')}</button>
     <button type="button" data-a="recal"><span class="ic">${IC.cam}</span>${t('home_recal')}</button>
     <div class="sec">${t('m_help')}</div>
+    <button type="button" data-a="tutorial"><span class="ic">${IC.help}</span>${t('tut_menu')}</button>
     <button type="button" data-a="help"><span class="ic">${IC.user}</span>${t('ins_menu')}</button>
-    <button type="button" data-a="lang"><span class="ic">${IC.mic}</span>${t('menu_lang')}: ${lang() === 'it' ? 'Italiano' : 'English'}</button>
+    <button type="button" data-a="lang"><span class="ic">${IC.globe}</span>${t('menu_lang')}: ${lang() === 'it' ? 'Italiano' : 'English'}</button>
+    <button type="button" data-a="theme"><span class="ic">${IC.moon}</span>${t('th_title_menu')}: ${t(S.theme === 'dark' ? 'th_dark' : S.theme === 'light' ? 'th_light' : 'th_auto')}</button>
     <div class="foot">${t('version')} ${APP_VERSION}</div></nav>`;
   document.body.appendChild(el);
   const close = () => el.remove();
@@ -946,8 +1020,53 @@ function showMenu() {
     if (a === 'send') showSend(); else if (a === 'research') showResearch(); else if (a === 'test') showLightTest(); else if (a === 'recal') showCalGuide(true);
     else if (a === 'profile') showProfile(() => showSeat({ eyebrow: t('menu_profile').toUpperCase(), log: true, onDone: () => route(), onBack: () => showProfile(() => route()) }));
     else if (a === 'help') showInstructions(0, true); else if (a === 'lang') { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); }
+    else if (a === 'theme') { S.theme = !S.theme || S.theme === 'auto' ? 'light' : S.theme === 'light' ? 'dark' : 'auto'; save(); applyTheme(); route(); showMenu(); }
+    else if (a === 'tutorial') { S.coachSeen = {}; save(); route(); }
   });
 }
+
+// ------------------------------------------------------------------ gesto indietro: scorri dal bordo sinistro verso destra, come nelle app Apple
+(() => {
+  let on = false, decided = false, sx = 0, sy = 0, st = 0, dx = 0, target = null;
+  const backTarget = () => {
+    if (document.getElementById('menu')) return 'menu';
+    for (const sel of ['#back', '#cancel', '#cgx']) { const b = document.querySelector(sel); if (b && !b.disabled && b.offsetParent !== null) return b; }
+    return null;
+  };
+  const reset = (anim) => { app.style.transition = anim ? 'transform .2s ease-out' : ''; app.style.transform = ''; if (anim) setTimeout(() => { app.style.transition = ''; }, 220); };
+  document.addEventListener('touchstart', e => {
+    on = false;
+    if (e.touches.length !== 1 || C.isActive() || reminderOpen) return;
+    const p = e.touches[0];
+    if (p.clientX > 24 || (e.target.closest && e.target.closest('input[type=range],canvas'))) return;
+    const bl = $('#black'); if (bl && !bl.hidden) return;
+    target = backTarget(); if (!target) return;
+    on = true; decided = false; sx = p.clientX; sy = p.clientY; st = Date.now(); dx = 0;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!on) return;
+    const p = e.touches[0]; dx = p.clientX - sx; const dy = p.clientY - sy;
+    if (!decided) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (dx <= 0 || Math.abs(dy) > Math.abs(dx)) { on = false; return; }
+      decided = true;
+    }
+    if (e.cancelable) e.preventDefault();
+    if (target !== 'menu') { app.style.transition = 'none'; app.style.transform = `translateX(${Math.max(0, dx)}px)`; }
+  }, { passive: false });
+  const end = () => {
+    if (!on) return; on = false;
+    if (!decided) return;
+    const v = dx / Math.max(1, Date.now() - st), go = dx > Math.min(120, window.innerWidth * 0.3) || (dx > 40 && v > 0.5);
+    if (target === 'menu') { if (go) { const m = document.getElementById('menu'); if (m) m.remove(); } return; }
+    if (!go) return reset(true);
+    app.style.transition = 'transform .18s ease-in'; app.style.transform = `translateX(${window.innerWidth}px)`;
+    const tg = target;
+    setTimeout(() => { app.style.transition = 'none'; app.style.transform = ''; if (tg.isConnected) tg.click(); setTimeout(() => { app.style.transition = ''; }, 30); }, 180);
+  };
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', () => { if (on && decided) reset(true); on = false; }, { passive: true });
+})();
 
 // ------------------------------------------------------------------ ciclo di controllo (ogni secondo)
 setInterval(() => {
