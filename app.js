@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.10.0';
+export const APP_VERSION = 'web-ios-0.10.1';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -910,8 +910,7 @@ function showResearch() {
     $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('send_preparing')}</div>`;
     try {
       const pack = await researcherFiles(), st = stamp(), p = S.participant_id, f = (name, csv) => new File([csv], `COMFY_${p}_${name}_${st}.csv`, { type: 'text/csv' });
-      const files = [...pack.files, f('calibrazioni', X.buildCalibrations(S)), f('promemoria', X.buildTable(S.reminders)), f('misure_prova_luce', X.buildTable(S.light_tests)),
-        f('profilo', X.buildTable(S.profile_changes || [])), f('checkin', X.buildTable(S.baselines))];
+      const files = [...pack.files, f('calibrazioni', X.buildCalibrations(S)), f('promemoria', X.buildTable(S.reminders)), ...(S.light_tests.length ? [f('misure_prova_luce', X.buildTable(S.light_tests))] : []),         f('profilo', X.buildTable(S.profile_changes || [])), f('checkin', X.buildTable(S.baselines))];
       $('#msg').innerHTML = '';
       await shareFiles(files, `COMFY – ${p} – ${t('research_all')}`, '', $('#msg'));
     } catch (e) { $('#msg').innerHTML = errBox(t('export_err') + ' ' + e.message); }
@@ -1046,7 +1045,6 @@ function showMenu() {
     <button type="button" data-a="research"><span class="ic">${IC.lib}</span>${t('research_title')}</button>
     <div class="sec">${t('m_mon')}</div>
     <button type="button" data-a="profile"><span class="ic">${IC.user}</span>${t('menu_profile')}</button>
-    <button type="button" data-a="test"><span class="ic">${IC.sun}</span>${t('home_test')}</button>
     <button type="button" data-a="recal"><span class="ic">${IC.cam}</span>${t('home_recal')}</button>
     <div class="sec">${t('m_help')}</div>
     <button type="button" data-a="tutorial"><span class="ic">${IC.help}</span>${t('tut_menu')}</button>
@@ -1060,7 +1058,7 @@ function showMenu() {
   el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
     close();
     const a = b.dataset.a;
-    if (a === 'send') showSend(); else if (a === 'research') showResearch(); else if (a === 'test') showLightTest(); else if (a === 'recal') showCalGuide(true);
+    if (a === 'send') showSend(); else if (a === 'research') showResearch(); else if (a === 'recal') showCalGuide(true);
     else if (a === 'profile') showProfile(() => showSeat({ eyebrow: t('menu_profile').toUpperCase(), log: true, onDone: () => route(), onBack: () => showProfile(() => route()) }));
     else if (a === 'help') showInstructions(0, true); else if (a === 'lang') { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); }
     else if (a === 'theme') { S.theme = !S.theme || S.theme === 'auto' ? 'light' : S.theme === 'light' ? 'dark' : 'auto'; save(); applyTheme(); route(); showMenu(); }
