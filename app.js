@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.8.0';
+export const APP_VERSION = 'web-ios-0.9.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -197,6 +197,30 @@ function showInstructions(i, fromMenu = false) {
   if (i > 0) $('#back').onclick = () => showInstructions(i - 1, fromMenu);
 }
 
+// ------------------------------------------------------------------ abbigliamento a immagini: T-shirt e camicia leggero, maglione medio, giacca pesante
+const GARMENTS = [['tshirt', 'light'], ['shirt', 'light'], ['sweater', 'medium'], ['jacket', 'heavy']];
+const garClass = g => (GARMENTS.find(x => x[0] === g) || [])[1] || null;
+const GSVG = {
+  tshirt: `<svg viewBox="0 0 104 96" fill="none" stroke="#A4472B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M36 12 L20 18 L6 34 L18 44 L26 37 L26 86 L78 86 L78 37 L86 44 L98 34 L84 18 L68 12 Q52 24 36 12 Z" fill="#F6E3DB"/><path d="M40 13 Q52 21 64 13"/></svg>`,
+  shirt: `<svg viewBox="0 0 104 96" fill="none" stroke="#A4472B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M38 10 L20 16 L8 50 L18 54 L26 34 L26 88 L78 88 L78 34 L86 54 L96 50 L84 16 L66 10 Z" fill="#FFFFFF"/><path d="M38 10 L52 26 L66 10"/><path d="M38 10 L44 24 L52 26 L60 24 L66 10" fill="#F6E3DB"/><path d="M52 26 L52 88"/><circle cx="56" cy="40" r="1.6" fill="#A4472B"/><circle cx="56" cy="54" r="1.6" fill="#A4472B"/><circle cx="56" cy="68" r="1.6" fill="#A4472B"/><path d="M30 46 h12 v10 h-12z"/></svg>`,
+  sweater: `<svg viewBox="0 0 104 96" fill="none" stroke="#A4472B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M38 10 L20 16 L8 76 L20 78 L26 36 L26 82 L78 82 L78 36 L84 78 L96 76 L84 16 L66 10 Q52 20 38 10 Z" fill="#E9B9A5"/><path d="M38 10 Q52 22 66 10"/><path d="M26 82 v6 h52 v-6"/><path d="M9 74 l11 2 M8 80 l11 2"/><path d="M95 74 l-11 2 M96 80 l-11 2"/></svg>`,
+  jacket: `<svg viewBox="0 0 104 96" fill="none" stroke="#A4472B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M36 8 L18 14 L6 80 L18 82 L24 40 L24 90 L80 90 L80 40 L86 82 L98 80 L86 14 L68 8 Z" fill="#B8573A"/><path d="M36 8 L44 30 L52 90 M68 8 L60 30 L52 90" stroke="#fff"/><path d="M36 8 L30 24 L44 30 M68 8 L74 24 L60 30" stroke="#fff"/><circle cx="57" cy="56" r="2" fill="#fff" stroke="none"/><circle cx="57" cy="70" r="2" fill="#fff" stroke="none"/><path d="M30 62 h12 M62 62 h12" stroke="#fff"/></svg>`
+};
+function garmentPicker(id, sel) {
+  return `<div class="car" id="${id}" role="radiogroup" aria-label="${esc(t('clo'))}">${GARMENTS.map(([k, c]) => `<button type="button" role="radio" aria-checked="${k === sel}" class="gar ${k === sel ? 'on' : ''}" data-g="${k}">${GSVG[k]}<span class="n">${t('g_' + k)}</span><span class="w">${cloLabel(c)}</span></button>`).join('')}</div>
+    <div class="cdots" id="${id}d" aria-hidden="true">${GARMENTS.map(([k]) => `<span class="${k === sel ? 'on' : ''}"></span>`).join('')}</div>`;
+}
+function bindGarments(id, onPick) {
+  const c = $('#' + id), dots = $('#' + id + 'd'); if (!c) return;
+  c.querySelectorAll('.gar').forEach((b, i) => b.onclick = () => {
+    c.querySelectorAll('.gar').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
+    [...dots.children].forEach((d, j) => d.classList.toggle('on', j === i));
+    b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    onPick(b.dataset.g);
+  });
+  const on = c.querySelector('.gar.on'); if (on) c.scrollLeft = on.offsetLeft - (c.clientWidth - on.offsetWidth) / 2;
+}
+
 function showProfile(onDone = null) {
   const p = S.profile || {};
   const ages = Array.from({ length: 63 }, (_, i) => i + 16).map(a => `<option value="${a}" ${p.age == a ? 'selected' : ''}>${a} ${t('age_unit')}</option>`).join('');
@@ -206,14 +230,15 @@ function showProfile(onDone = null) {
     <label class="lab" for="age">${t('age')}</label>
     <select id="age" class="field"><option value="">–</option>${ages}</select>
     <div class="lab">${t('sex')}</div>${seg('sex', [['female', t('sex_f')], ['male', t('sex_m')], ['other', t('sex_o')]])}
-    <div class="lab">${t('clo')}</div>${seg('clothing', [['light', t('clo_l'), t('clo_ls')], ['medium', t('clo_m'), t('clo_ms')], ['heavy', t('clo_h'), t('clo_hs')]])}
+    <div class="lab">${t('clo_pick')}</div>${garmentPicker('car', p.garment)}
     <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${onDone ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
   if (onDone) $('#back').onclick = () => route();
   app.querySelectorAll('.seg button').forEach(b => b.onclick = () => { p[b.dataset.f] = b.dataset.v; b.parentElement.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); });
   $('#age').onchange = e => p.age = +e.target.value || null;
+  bindGarments('car', g => { p.garment = g; p.clothing = garClass(g); });
   $('#go').onclick = () => {
-    if (!p.age || !p.sex || !p.clothing) { $('#msg').innerHTML = errBox(t('prof_missing')); return; }
-    S.profile = { ...(S.profile || {}), age: p.age, sex: p.sex, clothing: p.clothing, saved: Date.now() };
+    if (!p.age || !p.sex || !p.garment) { $('#msg').innerHTML = errBox(t('prof_missing')); return; }
+    S.profile = { ...(S.profile || {}), age: p.age, sex: p.sex, clothing: garClass(p.garment), garment: p.garment, saved: Date.now() };
     if (onDone) logProfileChange('profile'); save(); onDone ? onDone() : route();
   };
 }
@@ -246,7 +271,7 @@ async function showSeat(opts = {}) {
 
 function logProfileChange(what, prev = '') {
   if (!Array.isArray(S.profile_changes)) S.profile_changes = [];
-  S.profile_changes.push({ at: isoLocal(), what, previous: prev, age: S.profile.age, sex: S.profile.sex, clothing: S.profile.clothing, seat: S.profile.seat ? S.profile.seat.zone : '' });
+  S.profile_changes.push({ at: isoLocal(), what, previous: prev, age: S.profile.age, sex: S.profile.sex, clothing: S.profile.clothing, clothing_garment: S.profile.garment || '', seat: S.profile.seat ? S.profile.seat.zone : '' });
 }
 
 function gsvSlider(id, value) {
@@ -269,7 +294,7 @@ function showCheckin() {
   $('#go').onclick = () => {
     const v = get(), lvl = gsvLevel(v), now = Date.now(), p = S.profile;
     S.baselines.push({ participant_id: S.participant_id, session_id: S.session_id, timestamp: isoLocal(now), gsv_continuous_0_100: +v.toFixed(1), gsv_level: lvl, gsv_label: GSV_CODE[lvl],
-      age: p.age, sex: p.sex, seat_position: p.seat.zone, clothing: p.clothing, measurement_interval_min: 20, device: device(), app_version: APP_VERSION, utc_offset: utcOffset(now) });
+      age: p.age, sex: p.sex, seat_position: p.seat.zone, clothing: p.clothing, clothing_garment: p.garment || '', measurement_interval_min: 20, device: device(), app_version: APP_VERSION, utc_offset: utcOffset(now) });
     save(); route();
   };
   loadLandmarker().catch(() => {});  // precarica il modello mentre lo studente prosegue
@@ -608,25 +633,26 @@ const eyebrow = n => t('m_step', n, total());
 const cancelBtn = `<button class="btn out" id="cancel" type="button">${t('back')}</button>`;
 function bindCancel(fn) { const c = $('#cancel'); if (c) c.onclick = fn; }
 const cloLabel = c => t(c === 'light' ? 'clo_l' : c === 'heavy' ? 'clo_h' : 'clo_m');
+const cloText = (c, g) => g ? `${t('g_' + g)} (${cloLabel(c).toLowerCase()})` : cloLabel(c);
 
 function stepClothing() {
-  const cur = S.profile.clothing, seat = S.profile.seat;
-  let changed = M.clothingChanged ?? null, now = M.clothingNow || null, moved = M.seatChanged ?? null;
+  const cur = S.profile.clothing, curG = S.profile.garment || '', seat = S.profile.seat;
+  let changed = M.clothingChanged ?? null, now = M.garmentNow || null, moved = M.seatChanged ?? null;
   const yn = (k, v) => `<div class="seg"><button type="button" data-${k}="no" class="${v === false ? 'on' : ''}">${t('no')}</button><button type="button" data-${k}="yes" class="${v === true ? 'on' : ''}">${t('yes')}</button></div>`;
   const draw = () => {
     screen(`<main class="body">${topbar()}<div class="step">${eyebrow(1)}</div>
-      <div id="cloyn"><h1>${t('clo_title')}</h1><p class="t">${t('clo_current', cloLabel(cur))}</p>${yn('v', changed)}</div>
-      ${changed ? `<div class="lab">${t('clo_now')}</div><div class="seg" id="clo">${[['light', t('clo_l'), t('clo_ls')], ['medium', t('clo_m'), t('clo_ms')], ['heavy', t('clo_h'), t('clo_hs')]].map(([v, l, s]) => `<button type="button" data-c="${v}" class="${now === v ? 'on' : ''}">${l}<small>${s}</small></button>`).join('')}</div>` : ''}
+      <div id="cloyn"><h1>${t('clo_title')}</h1><p class="t">${t('clo_current', cloText(cur, curG))}</p>${yn('v', changed)}</div>
+      ${changed ? `<div class="lab">${t('clo_now')}</div>${garmentPicker('car', now)}` : ''}
       <h2 class="q2">${t('pos_title')}</h2><p class="t">${t('pos_current', t('seat_chosen', seat.rows, seat.seats))}</p>${yn('m', moved)}
       ${moved ? `<p class="t small">${t('pos_next')}</p>` : ''}
       <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${cancelBtn}</main>`);
     app.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { changed = b.dataset.v === 'yes'; draw(); });
-    app.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { now = b.dataset.c; draw(); });
+    bindGarments('car', g => { now = g; });
     app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { moved = b.dataset.m === 'yes'; draw(); });
     $('#go').onclick = () => {
       if (changed == null || (changed && !now)) { $('#msg').innerHTML = errBox(t('clo_missing')); return; }
       if (moved == null) { $('#msg').innerHTML = errBox(t('pos_missing')); return; }
-      M.clothingChanged = changed; M.clothingNow = changed ? now : cur; M.clothingPrevious = cur; M.seatChanged = moved; M.seatPrevious = seat.zone;
+      M.clothingChanged = changed; M.clothingNow = changed ? garClass(now) : cur; M.garmentNow = changed ? now : curG; M.clothingPrevious = cur; M.garmentPrevious = curG; M.seatChanged = moved; M.seatPrevious = seat.zone;
       if (moved) showSeat({ fresh: true, eyebrow: eyebrow(1), title: t('pos_now'), onBack: stepClothing, onDone: () => stepSelfie() });
       else stepSelfie();
     };
@@ -730,7 +756,7 @@ function saveMeasurement() {
   const status = !S.monitor.running ? 'monitoring_off' : sound.running() ? 'ok' : 'paused';
   const g = M.glareCtx, a = g.area;
   const tl = Math.max(-3, Math.min(3, Math.round(M.tsv))), al = Math.max(-3, Math.min(3, Math.round(M.acd))), gl = gsvLevel(M.gsv);
-  if (M.clothingChanged) { S.profile.clothing = M.clothingNow; }
+  if (M.clothingChanged) { S.profile.clothing = M.clothingNow; S.profile.garment = M.garmentNow; }
   const rec = {
     participant_id: S.participant_id, session_id: S.session_id, measurement_id: M.id, capture_timestamp: isoLocal(r.shotMs), survey_timestamp: isoLocal(M.surveyMs), trigger_type: M.trigger,
     tair_quality: 'unavailable', tair_quality_flags: 'no_tair|ios_no_battery_temperature', tair_status: 'unavailable_ios', tair_rule: 'none', aggregation_method: 'none',
@@ -756,7 +782,8 @@ function saveMeasurement() {
     selfie_source: M.selfieSource, selfie_capture_timestamp: isoLocal(r.shotMs), selfie_age_s: Math.round(r.ageMs / 1000), lens_model: r.exif.lens, image_px: `${r.width}x${r.height}`,
     reminder_timestamp: M.reminderMs ? isoLocal(M.reminderMs) : '', monitoring_started_timestamp: S.monitor.startedMs ? isoLocal(S.monitor.startedMs) : '',
     glasses_user_override: !!r.glassesOverride, calibration_kprime_compact: activeKCompact() ?? '', ...compactFields(r),
-    seat_changed: !!M.seatChanged, seat_previous: M.seatPrevious || ''
+    seat_changed: !!M.seatChanged, seat_previous: M.seatPrevious || '',
+    clothing_garment: M.garmentNow || '', clothing_garment_previous: M.garmentPrevious || ''
   };
   S.measurements.push(rec); save();
   showResult(rec, metrics);
@@ -899,8 +926,15 @@ function ringState() {
 }
 function ringHtml() { const rs = ringState(); return `<div class="ringbox" id="ring" role="timer">${ringSvg(rs.p, rs.col, rs.dim)}<div class="ringin">${rs.inner}</div></div>`; }
 function barsSvg() {
-  const n = 30, end = Math.floor(Date.now() / 1000), W = 300, H = 46, bw = W / n;
-  const m = new Map(sound.history.filter(x => x.e > end - n).map(x => [x.e, x.la]));
+  // ultimi 5 minuti: 60 barre da 5 s (media energetica dei livelli al secondo)
+  const n = 60, step = 5, end = Math.floor(Date.now() / 1000), W = 600, H = 40, bw = W / n;
+  const acc = new Map();
+  for (const x of sound.history) {
+    if (x.e <= end - n * step || x.e > end || !Number.isFinite(x.la)) continue;
+    const k = Math.floor((x.e - (end - n * step) - 1) / step), a = acc.get(k) || [0, 0];
+    a[0] += Math.pow(10, x.la / 10); a[1]++; acc.set(k, a);
+  }
+  const m = new Map([...acc].map(([k, [e, c]]) => [end - n + 1 + k, 10 * Math.log10(e / c)]));
   // scala adattiva sugli ultimi 30 s (almeno 12 dB): le variazioni del suono si vedono anche in un'aula tranquilla
   const vals = [...m.values()].filter(Number.isFinite), lo = vals.length ? Math.min(...vals) - 2 : 30, hi = Math.max(lo + 12, vals.length ? Math.max(...vals) + 1 : 42);
   let o = '';
@@ -913,7 +947,7 @@ function barsSvg() {
 const laText = () => Number.isFinite(sound.lastLa) ? fmt(sound.lastLa, 0) + ' dB' : '– dB';
 const recPct = () => Math.round(sound.fracValid(300) * 100);
 const sndCard = () => `<div class="card sndcard" id="snd"><div class="sndrow"><span class="s"><span class="dot"></span>${t('c_listen')}</span><span class="sndv" id="sndv">${laText()}</span></div>
-  <div id="bars">${barsSvg()}</div><div class="tiny" style="text-align:right" id="recf">${t('c_rec', recPct())}</div></div>`;
+  <div id="bars">${barsSvg()}</div><div class="sndax tiny"><span>${t('c_5min')}</span><span id="recf">${t('c_rec', recPct())}</span><span>${t('c_now')}</span></div></div>`;
 function chipText() {
   const mon = S.monitor, now = Date.now();
   if (!mon.running || monitoringPaused() || mon.pending) return '';
@@ -932,11 +966,13 @@ function showHome() {
   const vol = `<button class="card volb ${live ? 'glow' : ''}" id="vol" type="button"><div class="flex"><div class="ic">${IC.face.replace('#A4472B', '#fff')}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div><span class="chev" aria-hidden="true">›</span></div></button>`;
   const dim = `<button class="dimhint" id="dimhint" type="button">${MOON_S}<span id="dimt">${dimText()}</span></button>`;
   const off = navigator.onLine === false ? `<div class="offchip">${t('offline_home')}</div>` : '';
+  // Home A: anello che riempie l'altezza disponibile, «Segnala» grande, suono compatto
+  const grow = inner => `<div class="hgrow">${inner}</div>`;
   const body = live && mon.pending
-    ? `${ringHtml()}<button class="btn" id="go" type="button">${t('b_go')}</button>${sndCard()}${sw}<div id="msg"></div>`
-    : live ? `${ringHtml()}${chip ? `<div class="cchip" id="cchip">${chip}</div>` : ''}${vol}${sndCard()}${sw}<div id="msg"></div>${dim}`
-    : `${paused ? pausedHero : ''}${ringHtml()}${sw}<div id="msg"></div>${vol}`;
-  screen(`<main class="body" id="home">${topbar('home')}${off}${body}
+    ? `${grow(`${ringHtml()}<button class="btn big" id="go" type="button">${t('b_go')}</button>${sndCard()}`)}${sw}<div id="msg"></div>`
+    : live ? `${grow(`${ringHtml()}${chip ? `<div class="cchip" id="cchip">${chip}</div>` : ''}${vol}${sndCard()}`)}${sw}<div id="msg"></div>${dim}`
+    : `${paused ? pausedHero : ''}${grow(`${ringHtml()}${vol}`)}${sw}<div id="msg"></div>`;
+  screen(`<main class="body homea ${paused ? 'paused' : ''} ${chip && live && !mon.pending ? 'haschip' : ''}" id="home">${topbar('home')}${off}${body}
     <div class="foot">${t('version')} ${APP_VERSION} · ${S.participant_id}</div></main>`);
   homeSig = homeSigNow(); ringInner = ringState().inner;
   const st = $('#start'); if (st) st.onclick = startMonitoring;
@@ -1031,7 +1067,7 @@ function showMenu() {
     on = false;
     if (e.touches.length !== 1 || C.isActive() || reminderOpen) return;
     const p = e.touches[0];
-    if (p.clientX > 24 || (e.target.closest && e.target.closest('input[type=range],canvas'))) return;
+    if (p.clientX > 24 || (e.target.closest && e.target.closest('input[type=range],canvas,.car'))) return;
     const bl = $('#black'); if (bl && !bl.hidden) return;
     target = backTarget(); if (!target) return;
     on = true; decided = false; sx = p.clientX; sy = p.clientY; st = Date.now(); dx = 0;
