@@ -197,6 +197,19 @@ export async function analyzeSelfie(file, opts = {}) {
     clip, clipLeft: L.clipped / L.count, clipRight: R.clipped / R.count, lrDiff: lr,
     preview: renderPreview(canvas, peri)
   };
+  // ROI alta-guancia compatta (solo confronto, come la v2.19.3 Android): non invalida mai Ev
+  try {
+    const c = buildCompactCheek(xy);
+    const cl = meanLuma(canvas, c.left), cr = meanLuma(canvas, c.right);
+    if (cl.count > 0 && cr.count > 0) {
+      const cn = cl.count + cr.count, cym = (cl.mean * cl.count + cr.mean * cr.count) / cn;
+      out.compact = { ym: cym, ymLeft: cl.mean, ymRight: cr.mean, pixels: cn, clip: (cl.clipped + cr.clipped) / cn, lrDiff: Math.abs(cl.mean - cr.mean) / Math.max(1, cym) };
+      if (opts.referenceLux > 0) out.compact.kPrime = calibrateKPrime(opts.referenceLux, exif.iso, exif.exposureS, exif.fNumber, cym);
+      const kc = out.compact.kPrime ?? opts.kPrimeCompact;
+      if (kc > 0) out.compact.ev = estimateEv(kc, exif.iso, exif.exposureS, exif.fNumber, cym);
+    }
+  } catch (e) { out.compact = null; }
+  out.glasses = detectGlasses(canvas, lm);
   const flags = [];
   if (clip > 0.02) flags.push('clipping_gt_0.02');
   if (!isFront) flags.push('lens_unknown');
@@ -255,4 +268,59 @@ export async function takePhoto(stream) {
   const ic = new ImageCapture(track);
   const blob = await ic.takePhoto();
   return new File([blob], 'selfie.jpg', { type: blob.type || 'image/jpeg', lastModified: Date.now() });
+}
+
+// ------------------------------------------------------------------ ROI alta-guancia compatta (porting di buildCompactCheek, Android v2.19.3)
+export const COMPACT_METHOD_ID = 'upper_cheek_wide_v2.19.3_eye_centered_gap0.22_w0.40_h0.22';
+const EYE_1 = [33, 160, 158, 133, 153, 144], EYE_2 = [362, 385, 387, 263, 373, 380], NOSE_BOTTOM = [2, 97, 326];
+const dot = (a, b) => a.x * b.x + a.y * b.y;
+export function buildCompactCheek(xy) {
+  const c1 = meanPt(EYE_1.map(xy)), c2 = meanPt(EYE_2.map(xy)), firstIsLeft = c1.x < c2.x;
+  const eyeL = firstIsLeft ? c1 : c2, eyeR = firstIsLeft ? c2 : c1;
+  const contourL = (firstIsLeft ? EYE_1 : EYE_2).map(xy), contourR = (firstIsLeft ? EYE_2 : EYE_1).map(xy);
+  const iod = norm(sub(eyeR, eyeL)); if (!(iod > 0)) throw new Error('iod');
+  const ex = mul(sub(eyeR, eyeL), 1 / iod); let dn = V(-ex.y, ex.x); if (dn.y < 0) dn = mul(dn, -1);
+  const origin = mul(add(eyeL, eyeR), 0.5);
+  const u = p => dot(sub(p, origin), ex), v = p => dot(sub(p, origin), dn), toImg = (uu, vv) => add(add(origin, mul(ex, uu)), mul(dn, vv));
+  const noseU = NOSE_BOTTOM.map(xy).map(u).reduce((a, b) => a + b, 0) / 3;
+  const sA = u(xy(234)), sB = u(xy(454)), fL = Math.min(sA, sB), fR = Math.max(sA, sB), inset = (fR - fL) * 0.07;
+  const topL = Math.max(...contourL.map(v)) + 0.07 * iod, topR = Math.max(...contourR.map(v)) + 0.07 * iod, half = 0.40 * iod / 2;
+  const lIn = Math.min(u(eyeL) + half, noseU - 0.22 * iod), rIn = Math.max(u(eyeR) - half, noseU + 0.22 * iod);
+  const lOut = Math.max(fL + inset, u(eyeL) - half), rOut = Math.min(fR - inset, u(eyeR) + half);
+  const bL = topL + 0.22 * iod, bR = topR + 0.22 * iod, tp = 0.018 * iod;
+  if (lIn - lOut < 0.14 * iod || rOut - rIn < 0.14 * iod) throw new Error('narrow');
+  return { left: [toImg(lOut, topL), toImg(lIn, topL), toImg(lIn - tp, bL), toImg(lOut + tp, bL)], right: [toImg(rIn, topR), toImg(rOut, topR), toImg(rOut - tp, bR), toImg(rIn + tp, bR)], iod };
+}
+
+// ------------------------------------------------------------------ occhiali (porting di HeuristicGlassesDetector: controllo visivo sperimentale)
+export function detectGlasses(src, lm) {
+  try {
+    let minX = 1, maxX = 0, minY = 1, maxY = 0;
+    lm.forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
+    const cl = x => Math.max(0, Math.min(1, x)), px = (maxX - minX) * 0.06, py = (maxY - minY) * 0.04;
+    const left = Math.floor(cl(minX - px) * src.width), top = Math.floor(cl(minY - py) * src.height);
+    const right = Math.ceil(cl(maxX + px) * src.width), bottom = Math.ceil(cl(maxY + py) * src.height);
+    const fw = right - left, fh = bottom - top;
+    if (fw < 80 || fh < 80) return { status: 'unknown', confidence: 0 };
+    const w = fw > 260 ? 260 : fw, h = fw > 260 ? Math.max(80, Math.round(fh * 260 / fw)) : fh;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingQuality = 'high'; g.drawImage(src, left, top, fw, fh, 0, 0, w, h);
+    const d = g.getImageData(0, 0, w, h).data, Y = (x, y) => { const k = (y * w + x) * 4; return 0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2]; };
+    function region(l0, t0, r0, b0) {
+      let edges = 0, hor = 0, ver = 0, hi = 0, n = 0;
+      const l = Math.max(1, Math.min(l0, w - 2)), r = Math.max(l + 2, Math.min(r0, w - 1)), t = Math.max(1, Math.min(t0, h - 2)), b = Math.max(t + 2, Math.min(b0, h - 1));
+      for (let y = t; y < b; y += 2) for (let x = l; x < r; x += 2) {
+        const cc = Y(x, y), dx = Math.abs(Y(Math.min(x + 2, r), y) - Y(Math.max(x - 2, l), y)), dy = Math.abs(Y(x, Math.min(y + 2, b)) - Y(x, Math.max(y - 2, t)));
+        if (dx + dy > 48) edges++; if (dx > 30) ver++; if (dy > 30) hor++; if (cc > 238) hi++; n++;
+      }
+      return { edge: edges / Math.max(1, n), hor: hor / Math.max(1, n), ver: ver / Math.max(1, n), hi: hi / Math.max(1, n), n };
+    }
+    const x0 = Math.floor(w * 0.08), x1 = Math.floor(w * 0.92);
+    const eye = region(x0, Math.floor(h * 0.24), x1, Math.floor(h * 0.58)), cheek = region(x0, Math.floor(h * 0.58), x1, Math.floor(h * 0.82));
+    if (eye.n < 100 || cheek.n < 100) return { status: 'unknown', confidence: 0 };
+    const edgeRatio = eye.edge / Math.max(0.015, cheek.edge), structured = (eye.hor + eye.ver) / 2, hiBoost = Math.max(0, eye.hi - cheek.hi);
+    const c01 = x => Math.max(0, Math.min(1, x));
+    const conf = c01(0.58 * c01((edgeRatio - 1.05) / 1.15) + 0.30 * c01((structured - 0.055) / 0.09) + 0.12 * c01(hiBoost / 0.045));
+    return { status: conf >= 0.72 ? 'detected' : conf >= 0.52 ? 'possible' : 'not_detected', confidence: conf };
+  } catch (e) { return { status: 'unknown', confidence: 0 }; }
 }

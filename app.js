@@ -8,7 +8,7 @@ const X = await import('./export.js' + VQ);
 const { createDiagram } = await import('./diagram.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.2.0';
+export const APP_VERSION = 'web-ios-0.3.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -103,6 +103,7 @@ function isStandalone() { return navigator.standalone === true || matchMedia('(d
 function route() {
   if (!isStandalone() && !DEV) return showInstall();
   if (!S.welcomed) return showWelcome();
+  if (!S.instructionsSeen) return showInstructions(0);
   if (!S.profile || !S.profile.age) return showProfile();
   if (!S.profile.seat) return showSeat();
   if (!S.baselines.length) return showCheckin();
@@ -128,6 +129,35 @@ function showWelcome(again = false) {
     ${card(IC.user, t('wel_p1'), t('wel_p1s'))}${card(IC.mic, t('wel_p2'), t('wel_p2s'))}${card(IC.cam, t('wel_p3'), t('wel_p3s'))}
     <div class="spacer"></div><button class="btn" id="go" type="button">${t('wel_start')}</button></main>`);
   $('#go').onclick = () => { if (!S.welcomed) S.welcomed = Date.now(); save(); route(); };
+}
+
+const ILL = {
+  phone: `<svg viewBox="0 0 300 150"><rect x="20" y="96" width="260" height="14" rx="5" fill="#D8CCC4"/><rect x="40" y="110" width="10" height="34" fill="#C9BBB2"/><rect x="250" y="110" width="10" height="34" fill="#C9BBB2"/>
+    <g transform="translate(110 72) skewX(-25)"><rect width="84" height="24" rx="6" fill="#1D1A18"/><rect x="5" y="4" width="74" height="16" rx="3" fill="#000"/></g>
+    <circle cx="150" cy="40" r="22" fill="#F6E9E3"/><path d="M142 32h16v12h-16zM146 44v4M154 44v4M140 50h20" stroke="#A4472B" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M182 30q10 10 0 20M190 24q16 16 0 32" stroke="#A4472B" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`,
+  glasses: `<svg viewBox="0 0 300 150"><circle cx="150" cy="78" r="46" fill="#E9C2A6"/><path d="M104 70q4-50 50-46q40 4 42 42q-20-16-46-14q-26 2-46 18z" fill="#4A3A33"/>
+    <circle cx="134" cy="80" r="3" fill="#1D1A18"/><circle cx="166" cy="80" r="3" fill="#1D1A18"/><path d="M140 104q10 7 20 0" stroke="#1D1A18" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <g transform="translate(60 -12) rotate(-14 150 80)" opacity=".9"><circle cx="132" cy="80" r="14" fill="none" stroke="#1D1A18" stroke-width="3.5"/><circle cx="168" cy="80" r="14" fill="none" stroke="#1D1A18" stroke-width="3.5"/><path d="M146 80h8" stroke="#1D1A18" stroke-width="3.5"/></g>
+    <path d="M196 54l26-10" stroke="#A4472B" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 5"/></svg>`,
+  clock: `<svg viewBox="0 0 300 150"><circle cx="150" cy="75" r="56" fill="#F6E9E3"/><circle cx="150" cy="75" r="56" fill="none" stroke="#A4472B" stroke-width="8" stroke-dasharray="58.6 293" transform="rotate(-90 150 75)" stroke-linecap="round"/>
+    <path d="M150 75V44M150 75l18 10" stroke="#1D1A18" stroke-width="4" stroke-linecap="round"/><text x="150" y="146" font-size="15" font-weight="700" text-anchor="middle" fill="#A4472B" font-family="-apple-system,system-ui,sans-serif">10 min</text></svg>`,
+  what: `<svg viewBox="0 0 300 150">${[['#FFC94A', 70, 'M70 58v-6M70 98v6M50 78h-6M96 78h6'], ['#A4472B', 150, ''], ['#F7B49B', 230, '']].map(([c, x, p], i) => `<circle cx="${x}" cy="78" r="34" fill="${i === 1 ? '#F6E9E3' : '#FFF4E8'}"/>`).join('')}
+    <circle cx="70" cy="78" r="12" fill="#FFC94A"/><path d="M70 56v-6M70 100v6M48 78h-6M98 78h-6M55 63l-4-4M85 93l4 4M55 93l-4 4M85 63l4-4" stroke="#E0A92A" stroke-width="3" stroke-linecap="round"/>
+    <path d="M136 78h6l8-14 8 28 8-20 6 6h6" stroke="#A4472B" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="230" cy="78" r="16" fill="none" stroke="#A4472B" stroke-width="3"/><circle cx="224" cy="74" r="2" fill="#A4472B"/><circle cx="236" cy="74" r="2" fill="#A4472B"/><path d="M223 84q7 6 14 0" stroke="#A4472B" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`
+};
+const INS_ILL = ['what', 'phone', 'glasses', 'clock'];
+function showInstructions(i, fromMenu = false) {
+  const P = STR[lang()].ins, n = P.length, [title, body, note] = P[i];
+  screen(`<main class="body">${topbar()}<div class="step">${t('ins_label')} · ${i + 1}/${n}</div>
+    <div class="illus">${ILL[INS_ILL[i]]}</div><h1>${title}</h1><p class="t">${body}</p>
+    ${note ? `<div class="card ok"><div class="s"><b>${note}</b></div></div>` : ''}
+    <div class="dots">${P.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>
+    <div class="spacer"></div><button class="btn" id="go" type="button">${i < n - 1 ? t('next') : t('ins_done')}</button>
+    ${i > 0 ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
+  $('#go').onclick = () => { if (i < n - 1) showInstructions(i + 1, fromMenu); else { if (!S.instructionsSeen) { S.instructionsSeen = Date.now(); save(); } route(); } };
+  if (i > 0) $('#back').onclick = () => showInstructions(i - 1, fromMenu);
 }
 
 function showProfile() {
@@ -197,8 +227,6 @@ function showCheckin() {
   loadLandmarker().catch(() => {});  // precarica il modello mentre lo studente prosegue
 }
 
-// ------------------------------------------------------------------ calibrazione
-
 // ------------------------------------------------------------------ selfie: fotocamera dentro COMFY, con ripiego sull'app Fotocamera
 let camStream = null;
 function stopCam() { L.stopCamera(camStream); camStream = null; }
@@ -217,46 +245,97 @@ function errorText(e) {
  * Prima prova lo scatto dentro COMFY (ImageCapture.takePhoto, che conserva ISO ed esposizione);
  * se non e' possibile, o la foto non ha i dati di esposizione, propone l'app Fotocamera + libreria.
  */
+// illustrazione: telefono all'altezza degli occhi (giusto) e dal basso (sbagliato)
+function selfieIllustration() {
+  const person = (x, ok) => {
+    const skin = '#E9C2A6', hair = '#4A3A33', shirt = ok ? '#A4472B' : '#B9ACA3', chair = '#D8CCC4';
+    const px = ok ? x + 58 : x + 44, py = ok ? 62 : 128;
+    return `<rect x="${x - 34}" y="150" width="58" height="8" rx="4" fill="${chair}"/><rect x="${x - 34}" y="104" width="8" height="54" rx="4" fill="${chair}"/><path d="M${x - 16} 152 h44 v34" stroke="#6B625C" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M${x - 16} 94 q16 -8 30 0 l6 62 h-44z" fill="${shirt}"/>
+      ${ok ? `<path d="M${x + 4} 104 q22 4 ${px - x - 8} ${py - 98}" stroke="${skin}" stroke-width="9" stroke-linecap="round" fill="none"/>` : `<path d="M${x + 4} 108 q16 10 ${px - x - 8} ${py - 108}" stroke="${skin}" stroke-width="9" stroke-linecap="round" fill="none"/>`}
+      <circle cx="${x}" cy="70" r="20" fill="${skin}"/><path d="M${x - 20} 66 q2 -26 24 -24 q16 2 16 18 q-10 -8 -22 -6 q-10 2 -18 12z" fill="${hair}"/><circle cx="${x + 11}" cy="68" r="2.2" fill="#1D1A18"/>
+      <line x1="${x + 12}" y1="68" x2="${px - 4}" y2="${py}" stroke="${ok ? '#2E8B57' : '#C0392B'}" stroke-width="2" stroke-dasharray="4 4"/>
+      <rect x="${px - 4}" y="${py - 14}" width="8" height="28" rx="3" fill="#1D1A18" transform="rotate(${ok ? 0 : -35} ${px} ${py})"/>`;
+  };
+  const badge = (x, y, ok) => ok ? `<circle cx="${x}" cy="${y}" r="15" fill="#2E8B57"/><path d="M${x - 7} ${y} l5 5 l9 -10" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<circle cx="${x}" cy="${y}" r="15" fill="#C0392B"/><path d="M${x - 6} ${y - 6} l12 12 M${x + 6} ${y - 6} l-12 12" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>`;
+  return `<div class="ill"><svg viewBox="0 0 360 230" role="img" aria-label="${esc(t('ill_ok'))} / ${esc(t('ill_bad'))}"><rect width="360" height="230" fill="#FFFFFF"/>
+    <rect x="8" y="8" width="168" height="214" rx="14" fill="#EEF7F1"/><rect x="184" y="8" width="168" height="214" rx="14" fill="#FBEDEA"/>
+    ${person(70, true)}${person(246, false)}<text x="134" y="98" font-size="10.5" fill="#2E8B57" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">30 cm</text>
+    ${badge(158, 30, true)}${badge(334, 30, false)}
+    <text x="92" y="212" font-size="12.5" font-weight="700" fill="#1E6B41" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">${esc(t('ill_ok'))}</text>
+    <text x="268" y="212" font-size="12.5" font-weight="700" fill="#A93226" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">${esc(t('ill_bad'))}</text></svg></div>`;
+}
+const GLASSES_ICON = `<svg width="22" height="14" viewBox="0 0 44 28" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="15" r="8"/><circle cx="33" cy="15" r="8"/><path d="M19 15h6M3 12 1 6M41 12l2-6"/></svg>`;
+
+/**
+ * Schermata del selfie. opts: { eyebrow, title, intro (html), analyze(file) -> Promise<result>, onDone(result, source), onBack }
+ * 1) illustrazione + «Apri la fotocamera»; 2) anteprima con ovale e «Scatta» (ImageCapture.takePhoto, conserva ISO ed esposizione);
+ * se non e' possibile, o la foto non ha i dati di esposizione, propone l'app Fotocamera + libreria.
+ * Dopo l'analisi: controllo sperimentale degli occhiali (come Android), con «Non sto indossando occhiali».
+ */
 function showCamera(opts) {
   const inApp = L.canTakePhoto() && S.cameraMode !== 'library';
-  screen(`<main class="body">${topbar()}
-    <div class="step">${opts.eyebrow}</div><h1>${opts.title}</h1>${opts.intro || ''}
-    ${inApp ? `<div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="oval" aria-hidden="true"></div></div>
-      <p class="t small">${t('cam_body')}</p>` : `${card(IC.cam, '1. ' + t('selfie_1'), t('selfie_1s'))}${card(IC.lib, '2. ' + t('selfie_2'), t('selfie_2s'))}<p class="t small">${t('selfie_tip')}</p>`}
-    <div id="msg"></div><div class="spacer"></div>
-    ${inApp ? `<button class="btn" id="shoot" type="button" disabled>${t('cam_shoot')}</button>` : ''}
-    <label class="btn ${inApp ? 'out' : ''}" for="pick" id="pickl" ${inApp ? 'hidden' : ''}>${inApp ? t('cam_fallback') : t('choose_selfie')}<input id="pick" class="vh" type="file" accept="image/heic,image/heif,image/jpeg"></label>
-    ${opts.onBack ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
-  if (opts.onBack) $('#back').onclick = () => { stopCam(); opts.onBack(); };
+  const head = `<main class="body">${topbar()}<div class="step">${opts.eyebrow}</div><h1>${opts.title}</h1>${opts.intro || ''}`;
+  const glassNote = `<div class="glass">${GLASSES_ICON}${t('glasses_note')}</div>`;
+  const pickLabel = (hidden, out) => `<label class="btn ${out ? 'out' : ''}" for="pick" id="pickl" ${hidden ? 'hidden' : ''}>${inApp ? t('cam_fallback') : t('choose_selfie')}<input id="pick" class="vh" type="file" accept="image/heic,image/heif,image/jpeg"></label>`;
+  const back = opts.onBack ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : '';
   const busy = () => { $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('analyzing')}</div>`; return setTimeout(() => { const m = $('#msg .busy'); if (m) m.innerHTML = `<span class="spin"></span>${t('loading_model')}`; }, 2500); };
+  function bindCommon() {
+    if (opts.onBack) $('#back').onclick = () => { stopCam(); opts.onBack(); };
+    $('#pick').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) run(f, 'library'); };
+  }
+  function failed(err, source) {
+    console.error(err);
+    if (source === 'in_app_takephoto' && err instanceof LightError && (err.code === 'no_exposure' || err.code === 'no_time')) { S.cameraMode = 'library'; save(); }
+    $('#msg').innerHTML = errBox(errorText(err));
+    const pl = $('#pickl'); if (pl) pl.hidden = false;
+    const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
+  }
   async function run(file, source) {
     const slow = busy();
     try {
       const r = await opts.analyze(file);
-      clearTimeout(slow); stopCam();
+      clearTimeout(slow);
       if (r.exif.model) S.device = `${r.exif.make} ${r.exif.model}`.trim();
-      opts.onDone(r, source);
-    } catch (err) {
-      clearTimeout(slow); console.error(err);
-      if (source === 'in_app_takephoto' && err instanceof LightError && (err.code === 'no_exposure' || err.code === 'no_time')) { S.cameraMode = 'library'; save(); }
-      $('#msg').innerHTML = `<div class="err" role="alert">${esc(errorText(err))}</div>`;
-      const pl = $('#pickl'); if (pl) pl.hidden = false;
-      const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
-    }
+      r.glassesOverride = false;
+      const g = r.glasses || { status: 'unknown' };
+      if (g.status === 'detected' || g.status === 'possible') {
+        $('#msg').innerHTML = `<div class="glass warn">${GLASSES_ICON}<div>${t(g.status === 'detected' ? 'glasses_detected' : 'glasses_possible')}<small>${t('glasses_exp')}</small></div></div>
+          <button class="btn out" id="gover" type="button">${t('glasses_override')}</button>`;
+        const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
+        $('#gover').onclick = () => { r.glassesOverride = true; stopCam(); opts.onDone(r, source); };
+        return;
+      }
+      stopCam(); opts.onDone(r, source);
+    } catch (err) { clearTimeout(slow); failed(err, source); }
   }
-  $('#pick').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) run(f, 'library'); };
-  if (inApp) {
+  function cameraStage() {
+    screen(`${head}<div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="oval" aria-hidden="true"></div></div>
+      <p class="t small">${t('cam_body')}</p>${glassNote}<div id="msg"></div><div class="spacer"></div>
+      <button class="btn" id="shoot" type="button" disabled>${t('cam_shoot')}</button>${pickLabel(true, true)}${back}</main>`);
+    bindCommon();
     $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('cam_starting')}</div>`;
     L.startCamera($('#vid')).then(st => { camStream = st; $('#msg').innerHTML = ''; $('#shoot').disabled = false; })
-      .catch(err => { console.error(err); $('#msg').innerHTML = `<div class="err">${esc(t('cam_denied'))}</div>`; $('#pickl').hidden = false; });
+      .catch(err => { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; });
     $('#shoot').onclick = async () => {
       if (!camStream) return;
       $('#shoot').disabled = true;
       let file;
       try { file = await L.takePhoto(camStream); }
-      catch (err) { console.error(err); $('#msg').innerHTML = `<div class="err">${esc(t('cam_denied'))}</div>`; $('#pickl').hidden = false; $('#shoot').disabled = false; return; }
+      catch (err) { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; $('#shoot').disabled = false; return; }
       run(file, 'in_app_takephoto');
     };
+  }
+  if (inApp) {
+    screen(`${head}${selfieIllustration()}<p class="t small">${t('cam_body')}</p>${glassNote}<div id="msg"></div><div class="spacer"></div>
+      <button class="btn" id="open" type="button">${t('cam_open')}</button>${pickLabel(true, true)}${back}</main>`);
+    bindCommon();
+    $('#open').onclick = cameraStage;
+  } else {
+    screen(`${head}${selfieIllustration()}${card(IC.cam, '1. ' + t('selfie_1'), t('selfie_1s'))}${card(IC.lib, '2. ' + t('selfie_2'), t('selfie_2s'))}${glassNote}
+      <p class="t small">${t('selfie_tip')}</p><div id="msg"></div><div class="spacer"></div>${pickLabel(false, false)}${back}</main>`);
+    bindCommon();
   }
   loadLandmarker().catch(() => {});
 }
@@ -281,6 +360,13 @@ function showCalRef(recal = false) {
 }
 
 const activeK = () => S.calibrations.length ? S.calibrations[S.calibrations.length - 1].calibration_kprime : null;
+const activeKCompact = () => { const c = S.calibrations[S.calibrations.length - 1]; return c && c.calibration_kprime_compact ? c.calibration_kprime_compact : null; };
+const hy = s => String(s ?? '').replace(/\u2013/g, '-');
+function compactFields(r) {
+  const c = r.compact || {};
+  return { ym_compact_left: c.ymLeft, ym_compact_right: c.ymRight, ym_compact: c.ym, roi_compact_pixels: c.pixels, roi_compact_clipping_ratio: c.clip,
+    roi_compact_left_right_difference: c.lrDiff, ev_compact_lux: c.ev, roi_compact_method: r.compact ? L.COMPACT_METHOD_ID : '' };
+}
 const flagsOf = r => [r.flags, r.bilateralFlags].filter(x => x && x !== 'ok').join('|') || 'ok';
 
 function resultTable(r, extra = []) {
@@ -301,7 +387,9 @@ function saveCalibration(r, ref, source) {
     light_aggregation_method: OFFICIAL_EV_METHOD, bilateral_diagnostic_method: BILATERAL_METHOD, light_quality_flags: flagsOf(r),
     periocular_left_clipping_ratio: r.clipLeft, periocular_right_clipping_ratio: r.clipRight, reference_type: 'reference_phone',
     app_version: APP_VERSION, utc_offset: utcOffset(now),
-    capture_timestamp: isoLocal(r.shotMs), selfie_age_s: Math.round(r.ageMs / 1000), lens_model: r.exif.lens, image_px: `${r.width}x${r.height}`, selfie_source: source
+    capture_timestamp: isoLocal(r.shotMs), selfie_age_s: Math.round(r.ageMs / 1000), lens_model: r.exif.lens, image_px: `${r.width}x${r.height}`, selfie_source: source,
+    glasses_status: r.glasses ? r.glasses.status : 'unknown', glasses_confidence: r.glasses ? +r.glasses.confidence.toFixed(2) : '', glasses_user_override: !!r.glassesOverride,
+    calibration_kprime_compact: r.compact ? r.compact.kPrime : '', ...compactFields(r)
   });
   pendingRef = null; save();
   screen(`<main class="body">${topbar()}
@@ -320,7 +408,7 @@ function showLightTest() {
   $('#back').onclick = () => route();
   $('#go').onclick = () => {
     const ref = parseFloat(String($('#ref').value).replace(',', '.'));
-    showCamera({ eyebrow: t('test_title').toUpperCase(), title: t('cam_title'), analyze: f => analyzeSelfie(f, { kPrime: activeK() }), onDone: (r, src) => saveTest(r, ref, src), onBack: showLightTest });
+    showCamera({ eyebrow: t('test_title').toUpperCase(), title: t('cam_title'), analyze: f => analyzeSelfie(f, { kPrime: activeK(), kPrimeCompact: activeKCompact() }), onDone: (r, src) => saveTest(r, ref, src), onBack: showLightTest });
   };
 }
 function saveTest(r, ref, source) {
@@ -359,11 +447,11 @@ async function startMonitoring() {
 function stopMonitoring() { S.monitor.running = false; S.monitor.endedMs = Date.now(); save(); sound.stop(); try { wake && wake.release(); } catch (e) { } hideBlack(); showHome(); }
 function monitoringPaused() { return S.monitor.running && !sound.running(); }
 
-function armIdle() { clearTimeout(idleTimer); if (S.monitor.running && !inFlow && sound.running()) idleTimer = setTimeout(() => { if (!inFlow && $('#home')) showBlack(); }, 20000); }
+function armIdle() { clearTimeout(idleTimer); if (S.monitor.running && !inFlow && !S.monitor.pending && sound.running()) idleTimer = setTimeout(() => { if (!inFlow && $('#home')) showBlack(); }, 20000); }
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => armIdle(), { passive: true }));
 
 function showBlack() {
-  if (!S.monitor.running || inFlow) return;
+  if (!S.monitor.running || inFlow || S.monitor.pending) return;
   let b = $('#black');
   if (!b) { b = document.createElement('div'); b.id = 'black'; document.body.appendChild(b); b.onclick = () => { hideBlack(); showHome(); armIdle(); }; }
   b.hidden = false; renderBlack();
@@ -378,21 +466,39 @@ function renderBlack() {
 }
 
 // ------------------------------------------------------------------ promemoria
-let reminderOpen = null;
+let reminderOpen = null, reminderEl = null, reminderBeep = null;
+const SKIP_AFTER_MS = 10 * 60000;
+function closeReminderEl() { clearInterval(reminderBeep); if (reminderEl) reminderEl.remove(); reminderEl = null; reminderOpen = null; }
+function logReminder(dueMs, action) {
+  const rec = [...S.reminders].reverse().find(r => r.due === isoLocal(dueMs));
+  if (rec) { rec.action = action; rec.acted = isoLocal(); } else S.reminders.push({ due: isoLocal(dueMs), shown: '', action, acted: isoLocal() });
+}
 function showReminder(dueMs) {
   if (reminderOpen) return;
-  hideBlack(); inFlow = true;
-  const rec = { due: isoLocal(dueMs), shown: isoLocal(), action: '' }; S.reminders.push(rec); save();
-  reminderOpen = rec;
+  hideBlack();
+  if (!S.monitor.pending || S.monitor.pending.dueMs !== dueMs) { S.monitor.pending = { dueMs, shownMs: Date.now() }; S.reminders.push({ due: isoLocal(dueMs), shown: isoLocal(), action: '' }); }
+  S.monitor.snoozed = false; save();
+  reminderOpen = dueMs;
   let beeps = 0; sound.beep(); if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-  const again = setInterval(() => { if (++beeps >= 3 || !reminderOpen) return clearInterval(again); sound.beep(); }, 60000);
-  const el = document.createElement('div'); el.id = 'remind';
+  reminderBeep = setInterval(() => { if (++beeps >= 3 || !reminderOpen) return clearInterval(reminderBeep); sound.beep(); }, 60000);
+  const el = document.createElement('div'); el.id = 'remind'; reminderEl = el;
   el.innerHTML = `${LOGO.replace('width="30" height="30"', 'width="56" height="56"')}<h2>${t('rem_title')}</h2><p>${t('rem_body')}</p>
     <button class="btn light" id="remgo" type="button">${t('rem_go')}</button><button class="btn ghost" id="remlater" type="button">${t('rem_later')}</button>`;
   document.body.appendChild(el);
-  const close = action => { clearInterval(again); rec.action = action; rec.acted = isoLocal(); save(); el.remove(); reminderOpen = null; };
-  $('#remgo').onclick = () => { close('started'); startMeasurement('scheduled', dueMs); };
-  $('#remlater').onclick = () => { close('snoozed'); S.monitor.nextDueMs = Date.now() + 2 * 60000; save(); inFlow = false; showHome(); armIdle(); };
+  $('#remgo').onclick = () => { closeReminderEl(); startMeasurement('scheduled', dueMs); };
+  $('#remlater').onclick = () => {
+    closeReminderEl(); logReminder(dueMs, 'snoozed');
+    S.monitor.pending = null; S.monitor.nextDueMs = Date.now() + 2 * 60000; S.monitor.snoozed = true; save();
+    showHome(); armIdle();
+  };
+}
+/** Misura non iniziata ne' rimandata entro 10 minuti: viene registrata come saltata e il ciclo riparte. */
+function skipPending() {
+  const p = S.monitor.pending; if (!p) return;
+  closeReminderEl(); logReminder(p.dueMs, 'skipped');
+  const next = p.dueMs + INTERVAL_MIN * 60000;
+  S.monitor.pending = null; S.monitor.snoozed = false; S.monitor.lastSkipped = { dueMs: p.dueMs, nextMs: next }; S.monitor.nextDueMs = next; save();
+  if ($('#home')) showHome();
 }
 
 // ------------------------------------------------------------------ misura: abbigliamento → selfie → abbagliamento → (diagramma) → termico → acustico
@@ -402,7 +508,10 @@ function startMeasurement(trigger, reminderMs) {
   const now = Date.now();
   inFlow = true; hideBlack(); clearTimeout(idleTimer);
   M = { id: uuid(), trigger, anchorMs: trigger === 'scheduled' && reminderMs ? Math.min(reminderMs, now) : now, reminderMs: reminderMs || null };
-  if (S.monitor.running) { S.monitor.nextDueMs = now + INTERVAL_MIN * 60000; save(); }   // il prossimo promemoria parte da questa misura
+  if (S.monitor.running) {   // il prossimo promemoria parte da questa misura
+    if (S.monitor.pending && trigger === 'scheduled') logReminder(S.monitor.pending.dueMs, 'started');
+    S.monitor.pending = null; S.monitor.snoozed = false; S.monitor.lastSkipped = null; S.monitor.nextDueMs = now + INTERVAL_MIN * 60000; save();
+  }
   stepClothing();
 }
 const total = () => M && M.glare === false ? 5 : 6;
@@ -430,7 +539,7 @@ function stepClothing() {
   draw();
 }
 function stepSelfie() {
-  showCamera({ eyebrow: eyebrow(2), title: t('cam_title'), analyze: f => analyzeSelfie(f, { kPrime: activeK() }),
+  showCamera({ eyebrow: eyebrow(2), title: t('cam_title'), analyze: f => analyzeSelfie(f, { kPrime: activeK(), kPrimeCompact: activeKCompact() }),
     onDone: (r, src) => { M.light = r; M.selfieSource = src; stepGsv(); }, onBack: stepClothing });
 }
 function stepGsv() {
@@ -537,16 +646,17 @@ function saveMeasurement() {
     face_quality_score: '', roll_deg: r.roll, roi_clipping_ratio: r.clip, roi_left_right_difference: r.lrDiff, roi_roll_deg: r.roll, roi_method: PERIOCULAR_METHOD_ID,
     ym_periocular_left: r.ymLeft, ym_periocular_right: r.ymRight, ym_periocular: r.ym, iod_periocular_px: r.iod, periocular_clipping_ratio: r.clip,
     calibration_kprime_periocular: k, ev_periocular_lux: r.ev, periocular_method: PERIOCULAR_METHOD_ID,
-    glasses_status: 'unknown', glasses_confidence: '',
+    glasses_status: r.glasses ? r.glasses.status : 'unknown', glasses_confidence: r.glasses ? r.glasses.confidence.toFixed(2) : '',
     glare_diagram_shown: g.shown, glare_skip_reason: g.skip || '', glare_source_type: g.type || '', glare_source_zone: a ? a.zone : '',
     glare_source_x: a ? a.x.toFixed(3) : '', glare_source_y: a ? a.y.toFixed(3) : '', glare_source_theta_deg: a ? a.thetaDeg.toFixed(1) : '', glare_source_phi_deg: a ? a.phiDeg.toFixed(1) : '',
     glare_source_theta_min_deg: a ? a.thetaMinDeg.toFixed(1) : '', glare_source_theta_max_deg: a ? a.thetaMaxDeg.toFixed(1) : '', glare_source_solid_angle_sr: a ? a.solidAngleSr.toFixed(4) : '', glare_source_area_frac: a ? a.areaFraction.toFixed(4) : '',
     glare_source_polygon: a ? a.polygon.map(([x, y]) => `${x.toFixed(3)};${y.toFixed(3)}`).join('|') : '', context_capture_mode: 'none',
     device: device(), calibration_kprime: k, phone_als_lux: '', app_version: APP_VERSION, utc_offset: utcOffset(now),
     ...X.soundFields(metrics, isoLocal(M.anchorMs), status, AUDIO_SOURCE, q),
-    platform: 'ios_web', room_id: p.seat.room_id, seat_zone: p.seat.zone, seat_rows: p.seat.rows, seat_seats: p.seat.seats, seat_dist_window_m: p.seat.dist_window_m ?? '',
+    platform: 'ios_web', room_id: p.seat.room_id, seat_zone: p.seat.zone, seat_rows: hy(p.seat.rows), seat_seats: hy(p.seat.seats), seat_dist_window_m: p.seat.dist_window_m ?? '',
     selfie_source: M.selfieSource, selfie_capture_timestamp: isoLocal(r.shotMs), selfie_age_s: Math.round(r.ageMs / 1000), lens_model: r.exif.lens, image_px: `${r.width}x${r.height}`,
-    reminder_timestamp: M.reminderMs ? isoLocal(M.reminderMs) : '', monitoring_started_timestamp: S.monitor.startedMs ? isoLocal(S.monitor.startedMs) : ''
+    reminder_timestamp: M.reminderMs ? isoLocal(M.reminderMs) : '', monitoring_started_timestamp: S.monitor.startedMs ? isoLocal(S.monitor.startedMs) : '',
+    glasses_user_override: !!r.glassesOverride, calibration_kprime_compact: activeKCompact() ?? '', ...compactFields(r)
   };
   S.measurements.push(rec); save();
   const m5 = metrics[5] || {};
@@ -585,37 +695,61 @@ function showSend() {
   };
 }
 
-// ------------------------------------------------------------------ Home
+// ------------------------------------------------------------------ Home (proposta B: il suono al centro)
+const DIAL_MIN = 0, DIAL_MAX = 80;
+function dialSvg(v, dim) {
+  const r = 80, cx = 100, cy = 100, p = Number.isFinite(v) ? Math.max(0, Math.min(1, (v - DIAL_MIN) / (DIAL_MAX - DIAL_MIN))) : 0, ang = Math.PI * (1 - p);
+  const arc = (f, to, col, w) => `<path d="M${cx + r * Math.cos(f)} ${cy - r * Math.sin(f)} A${r} ${r} 0 0 1 ${cx + r * Math.cos(to)} ${cy - r * Math.sin(to)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  return `<svg width="200" height="116" viewBox="0 0 200 116" aria-hidden="true">${arc(Math.PI, 0, '#EBD9CF', 12)}${p > 0.005 ? arc(Math.PI, ang, dim ? '#C9BBB2' : '#A4472B', 12) : ''}</svg>`;
+}
+function sparkSvg() {
+  const end = Math.floor(Date.now() / 1000), pts = sound.history.filter(s => s.e > end - 300 && Number.isFinite(s.la));
+  if (pts.length < 5) return '<svg class="spark" width="100%" height="34"></svg>';
+  const lo = Math.min(...pts.map(s => s.la)) - 2, hi = Math.max(...pts.map(s => s.la)) + 2, W = 300, H = 34;
+  const d = pts.map(s => `${((s.e - (end - 300)) / 300 * W).toFixed(1)},${(H - (s.la - lo) / (hi - lo) * H).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}"><polyline fill="none" stroke="#A4472B" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${d}"/></svg>`;
+}
+function statePill() {
+  const mon = S.monitor, now = Date.now();
+  if (mon.pending) return `<span class="pl due">${t('b_due', hhmm(mon.pending.dueMs))}</span>`;
+  if (mon.lastSkipped && now < mon.lastSkipped.nextMs) return `<span class="pl warn">${t('b_skipped', hhmm(mon.lastSkipped.dueMs), hhmm(mon.lastSkipped.nextMs))}</span>`;
+  if (mon.snoozed) return `<span class="pl br">${t('b_snoozed', hhmm(mon.nextDueMs))}</span>`;
+  return `<span class="pl br">${t('b_next', hhmm(mon.nextDueMs), Math.max(0, Math.ceil((mon.nextDueMs - now) / 60000)))}</span>`;
+}
 function showHome() {
-  const p = S.profile, k = activeK(), mon = S.monitor, today = dayStr();
-  const nToday = S.measurements.filter(m => (m.capture_timestamp || '').startsWith(today)).length;
-  const paused = monitoringPaused();
-  const lastSend = S.sends.length ? S.sends[S.sends.length - 1].at : null;
+  const mon = S.monitor, today = dayStr();
+  const todays = S.measurements.filter(m => (m.capture_timestamp || '').startsWith(today)), last = todays[todays.length - 1];
+  const paused = monitoringPaused(), live = mon.running && !paused;
+  const la = sound.lastLa;
+  const pausedHero = `<div class="warnhero"><div class="h">${t('mon_paused', hhmm(mon.pausedSinceMs || Date.now()))}</div><p class="t" style="margin:4px 0 10px">${t('mon_rules')}</p><button class="btn" id="start" type="button">${t('mon_resume')}</button></div>`;
   let hero;
-  if (!mon.running) hero = `<div class="hero"><div class="h">${t('mon_start')}</div><p class="t" style="margin:6px 0 12px">${t('mon_start_s')}</p><button class="btn" id="start" type="button">${t('mon_start')}</button></div>`;
-  else if (paused) hero = `<div class="hero warn"><div class="h">${t('mon_paused', hhmm(mon.pausedSinceMs || Date.now()))}</div><p class="t" style="margin:6px 0 12px">${t('mon_rules')}</p><button class="btn" id="start" type="button">${t('mon_resume')}</button></div>`;
-  else {
-    const left = Math.max(0, mon.nextDueMs - Date.now()), frac = 1 - left / (INTERVAL_MIN * 60000);
-    hero = `<div class="hero"><div class="s strong">${t('mon_active')}</div>${ring(Math.max(0, Math.min(1, frac)), Math.ceil(left / 60000) + ' min', t('mon_next', hhmm(mon.nextDueMs)))}
-      <div class="s" id="snd" style="text-align:center">${t('mon_sound_wait')}</div><button class="btn" id="blackbtn" type="button" style="margin-top:12px">${t('mon_black')}</button></div>`;
-  }
-  screen(`<main class="body" id="home">${topbar(true)}${hero}
-    <div id="msg"></div>
+  if (!mon.running) hero = `<div class="hero dialhero"><div class="dial">${dialSvg(NaN)}<div class="v"><b>–</b><span>${t('b_sound_now')}</span></div></div>
+      <div class="pillrow"><span class="pl">${t('b_not_active')}</span></div><p class="t small" style="margin:10px 0">${t('mon_start_s')}</p><button class="btn" id="start" type="button">${t('mon_start')}</button></div>`;
+  else if (paused) hero = `${pausedHero}<div class="hero dialhero"><div class="dial">${dialSvg(NaN, true)}<div class="v"><b>–</b><span>${t('b_sound_now')}</span></div></div><div class="pillrow"><span class="pl warn">${t('b_paused')}</span></div></div>`;
+  else hero = `<div class="hero dialhero"><div class="dial" id="dial">${dialSvg(la)}<div class="v"><b id="dialv">${Number.isFinite(la) ? fmt(la, 0) : '–'}</b><span>${t('b_sound_now')}</span></div></div>
+      <div id="spark">${sparkSvg()}</div><div class="pillrow" id="pills">${statePill()}<span class="pl" id="rec">${t('b_rec', Math.round(sound.fracValid(300) * 100))}</span></div></div>
+      ${mon.pending ? `<button class="btn" id="go" type="button">${t('b_go')}</button>` : `<button class="btn sm" id="blackbtn" type="button">${t('mon_black')}</button>`}`;
+  screen(`<main class="body" id="home">${topbar(true)}${hero}<div id="msg"></div>
     <button class="card action" id="vol" type="button"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>
-    <div class="card"><div class="flex"><div class="ic">${IC.user}</div><div><div class="h">${t('meas_today')}: ${nToday}</div>
-      <div class="s">${t('seat_chosen', p.seat.rows, p.seat.seats)} · ${cloLabel(p.clothing)} · k′ ${fmt(k, 2)}</div></div></div></div>
-    <button class="card action" id="send" type="button"><div class="flex"><div class="ic">${IC.send}</div><div><div class="h">${t('send')}</div><div class="s">${t('send_s', S.measurements.length)}${lastSend ? ' · ' + t('send_last', lastSend.slice(11, 16)) : ''}</div></div></div></button>
+    <div class="card"><div class="h">${todays.length ? t('b_today', todays.length) : t('b_today_none')}</div>
+      <div class="s">${last ? t('b_last', last.capture_timestamp.slice(11, 16), fmt(+last.ev_lux)) : t('seat_chosen', S.profile.seat.rows, S.profile.seat.seats)}</div></div>
     ${mon.running ? `<button class="linkbtn" id="stop" type="button">${t('mon_stop')}</button>` : ''}
     <div class="foot">${t('version')} ${APP_VERSION} · ${S.participant_id}</div></main>`);
   const st = $('#start'); if (st) st.onclick = startMonitoring;
-  const bl = $("#blackbtn"); if (bl) bl.onclick = showBlack;
+  const bl = $('#blackbtn'); if (bl) bl.onclick = showBlack;
+  const go = $('#go'); if (go) go.onclick = () => startMeasurement('scheduled', mon.pending.dueMs);
   $('#vol').onclick = () => startMeasurement('user_initiated');
-  $('#send').onclick = showSend;
   const sp = $('#stop'); if (sp) sp.onclick = confirmStop;
-  updateHomeSound();
 }
-function ring(p, val, lab) { const r = 50, c = 2 * Math.PI * r; return `<div class="ring"><svg width="124" height="124" viewBox="0 0 124 124"><circle cx="62" cy="62" r="${r}" fill="none" stroke="#EBD9CF" stroke-width="8"/><circle cx="62" cy="62" r="${r}" fill="none" stroke="#A4472B" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c * p} ${c}" transform="rotate(-90 62 62)"/></svg><div class="v"><b>${val}</b><span>${lab}</span></div></div>`; }
-function updateHomeSound() { const s = $('#snd'); if (!s) return; const la = sound.lastLa; s.textContent = sound.running() ? t('mon_sound', Number.isFinite(la) ? fmt(la, 0) + ' dB' : '–', Math.round(sound.fracValid(300) * 100)) : t('mon_sound_wait'); }
+let sparkTick = 0;
+function updateHome() {
+  if (!$('#home') || !S.monitor.running || monitoringPaused()) return;
+  const la = sound.lastLa, v = $('#dialv'), d = $('#dial');
+  if (v) v.textContent = Number.isFinite(la) ? fmt(la, 0) : '–';
+  if (d) d.firstElementChild.outerHTML = dialSvg(la);
+  const p = $('#pills'); if (p) p.innerHTML = `${statePill()}<span class="pl" id="rec">${t('b_rec', Math.round(sound.fracValid(300) * 100))}</span>`;
+  if (++sparkTick % 5 === 0) { const s = $('#spark'); if (s) s.innerHTML = sparkSvg(); }
+}
 function confirmStop() {
   const m = $('#msg');
   m.innerHTML = `<div class="card"><p class="t" style="margin-bottom:10px">${t('mon_stop_confirm')}</p><div class="seg"><button type="button" id="sy">${t('mon_stop_yes')}</button><button type="button" id="sn" class="on">${t('mon_stop_no')}</button></div></div>`;
@@ -633,7 +767,7 @@ function showMenu() {
     <button type="button" data-a="test"><span class="ic">${IC.sun}</span>${t('home_test')}</button>
     <button type="button" data-a="recal"><span class="ic">${IC.cam}</span>${t('home_recal')}</button>
     <div class="sec">${t('m_help')}</div>
-    <button type="button" data-a="help"><span class="ic">${IC.user}</span>${t('m_tutorial')}</button>
+    <button type="button" data-a="help"><span class="ic">${IC.user}</span>${t('ins_menu')}</button>
     <button type="button" data-a="lang"><span class="ic">${IC.mic}</span>${t('menu_lang')}: ${lang() === 'it' ? 'Italiano' : 'English'}</button>
     <div class="foot">${t('version')} ${APP_VERSION}</div></nav>`;
   document.body.appendChild(el);
@@ -643,22 +777,21 @@ function showMenu() {
     close();
     const a = b.dataset.a;
     if (a === 'send') showSend(); else if (a === 'test') showLightTest(); else if (a === 'recal') showCalRef(true);
-    else if (a === 'help') showWelcome(true); else if (a === 'lang') { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); }
+    else if (a === 'help') showInstructions(0, true); else if (a === 'lang') { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); }
   });
 }
 
 // ------------------------------------------------------------------ ciclo di controllo (ogni secondo)
 setInterval(() => {
-  if (S.monitor.running) {
-    if (!sound.running() && !S.monitor.pausedSinceMs) { S.monitor.pausedSinceMs = Date.now(); save(); }
-    if (sound.running() && S.monitor.pausedSinceMs) { S.monitor.pausedSinceMs = null; save(); }
-    if (!inFlow && sound.running() && Date.now() >= S.monitor.nextDueMs) showReminder(S.monitor.nextDueMs);
+  const mon = S.monitor, now = Date.now();
+  if (mon.running) {
+    if (!sound.running() && !mon.pausedSinceMs) { mon.pausedSinceMs = now; save(); if ($('#home') && !inFlow) showHome(); }
+    if (sound.running() && mon.pausedSinceMs) { mon.pausedSinceMs = null; save(); if ($('#home') && !inFlow) showHome(); }
+    if (mon.pending && now - mon.pending.dueMs >= SKIP_AFTER_MS && !inFlow) skipPending();
+    else if (!inFlow && sound.running() && !mon.pending && now >= mon.nextDueMs) showReminder(mon.nextDueMs);
+    if (mon.lastSkipped && now >= mon.lastSkipped.nextMs + 60000) { mon.lastSkipped = null; save(); }
   }
-  if ($('#home') && !inFlow) {
-    const ringV = $('.ring .v b');
-    if (ringV && S.monitor.running && sound.running()) { const left = Math.max(0, S.monitor.nextDueMs - Date.now()); ringV.textContent = Math.ceil(left / 60000) + ' min'; }
-    updateHomeSound();
-  }
+  if (!inFlow) updateHome();
   renderBlack();
 }, 1000);
 

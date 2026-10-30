@@ -14,7 +14,7 @@ export const STR = {
     wel_body: 'Durante la lezione COMFY misura la luce sul tuo volto e il suono intorno a te, e ogni 20 minuti ti chiede come ti senti. Ci vogliono circa 2 minuti a misura.',
     wel_p1: 'Configurazione', wel_p1s: 'profilo, posto in aula e calibrazione della luce: circa 3 minuti',
     wel_p2: 'Monitoraggio', wel_p2s: 'telefono sul banco, COMFY aperto, schermo nero',
-    wel_p3: 'Selfie', wel_p3s: 'li scatti tu con l\'app Fotocamera: COMFY li analizza sul telefono e non li invia a nessuno. Puoi cancellarli dal Rullino quando vuoi.',
+    wel_p3: 'Selfie', wel_p3s: 'li scatti dentro COMFY: vengono analizzati sul telefono e nessuna foto viene salvata né inviata.',
     wel_start: 'Inizia',
     // profilo
     step: n => `PASSO ${n} DI 4`,
@@ -39,8 +39,8 @@ export const STR = {
     cal_ref_body: 'Il ricercatore tiene il telefono taratore accanto ai tuoi occhi, con lo schermo rivolto dove guardi, e ti dice il valore. Resta seduto in questa posizione fino al selfie.',
     cal_ref_label: 'Illuminamento comunicato (lx)',
     cal_ref_missing: 'Inserisci il valore comunicato dal ricercatore (tra 5 e 5000 lx).',
-    cal_selfie_title: 'Scatta un selfie con la Fotocamera',
-    selfie_1: 'Apri l\'app Fotocamera', selfie_1s: 'fotocamera frontale, telefono a circa 30 cm, sguardo verso la cattedra, poi scatta',
+    cal_selfie_title: 'Il selfie di calibrazione',
+    selfie_1: 'Apri l\'app Fotocamera', selfie_1s: 'fotocamera frontale, telefono davanti al viso all\'altezza degli occhi, a circa 30 cm, poi scatta',
     selfie_2: 'Torna qui e scegli il selfie', selfie_2s: 'COMFY legge ISO, tempo di esposizione e ora dello scatto',
     selfie_tip: 'Non usare filtri, modalità Ritratto o il flash dello schermo.',
     choose_selfie: 'Scegli il selfie',
@@ -73,7 +73,7 @@ export const STR = {
     test_body: 'Se il ricercatore ti comunica un nuovo valore del taratore, inseriscilo: COMFY lo confronta con l\'illuminamento calcolato dal selfie.',
     test_saved: 'Misura di prova salvata',
     // ---- blocco 2
-    cam_title: 'Il selfie', cam_body: 'Tieni il telefono a circa 30 cm, guarda verso la cattedra e tieni il volto dentro l\'ovale. Poi tocca Scatta.',
+    cam_title: 'Il selfie', cam_body: 'Tieni il telefono davanti al viso, all\'altezza degli occhi, a circa 30 cm, con il volto dentro l\'ovale. Poi tocca Scatta.',
     cam_shoot: 'Scatta', cam_starting: 'Avvio della fotocamera…', cam_denied: 'COMFY non può usare la fotocamera. Consenti l\'accesso quando Safari lo chiede, oppure usa l\'app Fotocamera.',
     cam_fallback: 'Usa l\'app Fotocamera', cam_fallback_s: 'Se lo scatto qui non funziona: scatta il selfie con l\'app Fotocamera e sceglilo dalla libreria.',
     cam_retake: 'Rifai il selfie',
@@ -87,7 +87,7 @@ export const STR = {
     glare_none: 'Non so da dove arrivi', glare_type_q: 'Che cos\'è?', glare_draw_first: 'Contorna l\'area che ti dà più fastidio, oppure tocca «Non so da dove arrivi».', glare_type_missing: 'Scegli che cos\'è l\'area selezionata.',
     glare_zone: (z, d) => `${z} · circa ${d}° dalla direzione dello sguardo · trascina per spostare`,
     zone: { screen: 'Vista centrale', ceiling: 'In alto', desk: 'In basso / scrivania', left: 'Lato sinistro', right: 'Lato destro' },
-    src: { window_daylight: 'Finestra / luce naturale', artificial_light: 'Luce artificiale', screen: 'Schermo', reflection: 'Riflesso', other: 'Altro', not_sure: 'Non so' },
+    src: { window_daylight: 'Finestra / luce naturale', artificial_light: 'Luce artificiale', screen: 'Schermo', board_iwb: 'Lavagna o LIM', other: 'Altro', not_sure: 'Non so' },
     th_title: 'Come ti senti alla tua postazione?', tsv_q: 'Sensazione termica', tsv: ['Freddo', 'Fresco', 'Leggermente fresco', 'Neutro', 'Leggermente caldo', 'Caldo', 'Molto caldo'],
     pref_q: 'In questo momento preferiresti essere…', pref: { cooler: 'Più fresco', no_change: 'Così', warmer: 'Più caldo' },
     acc_q: 'L\'ambiente termico è accettabile per te?', th_missing: 'Rispondi alle domande su preferenza e accettabilità termica.',
@@ -120,6 +120,22 @@ export const STR = {
     send_text: (id, dev, v, n, a, c) => `Dati COMFY del partecipante ${id}.\nTelefono: ${dev} · App ${v}\nMisure: ${n}\n\nFile allegati:\n· ${a} (dati per l'analisi)\n· ${c} (copia completa di sicurezza)\n\nInviato da COMFY per iPhone.`,
     update_ready: 'È disponibile una nuova versione di COMFY.', update_go: 'Aggiorna',
     menu: 'Menu', m_data: 'DATI', m_mon: 'MONITORAGGIO', m_help: 'AIUTO', m_tutorial: 'Come funziona',
+    // ---- v0.3
+    ill_ok: 'All\'altezza degli occhi', ill_bad: 'Non dal basso', cam_open: 'Apri la fotocamera',
+    glasses_note: 'Se porti gli occhiali, toglili prima dello scatto',
+    glasses_detected: 'Occhiali rilevati · toglili e rifai il selfie', glasses_possible: 'Forse indossi occhiali · toglili e rifai il selfie',
+    glasses_override: 'Non sto indossando occhiali', glasses_exp: 'Controllo visivo sperimentale',
+    ins_label: 'PRIMA DI INIZIARE', ins_done: 'Ho capito', ins_menu: 'Istruzioni',
+    ins: [
+      ['Cos\'è COMFY', 'COMFY è un\'app di ricerca sul comfort negli spazi di studio. Durante la lezione registra l\'ambiente sonoro e, con un breve selfie, misura la luce che arriva sul tuo volto. Ogni 10 minuti ti chiede come ti senti: confrontando misure e risposte, lo studio indaga le relazioni tra luce, suono e la tua percezione del comfort.'],
+      ['Telefono sul banco, schermo nero', 'Avvia il monitoraggio e appoggia il telefono sul banco, con lo schermo verso l\'alto e sempre nello stesso punto. COMFY oscura lo schermo da solo. Non bloccare il telefono e non cambiare app: altrimenti il suono smette di essere registrato.'],
+      ['Senza occhiali durante il selfie', 'Togli gli occhiali prima di ogni selfie: le lenti cambiano la luce che la fotocamera misura sulla pelle. Tieni il telefono davanti al viso, all\'altezza degli occhi.', 'Nessuna foto viene salvata: dal selfie si ricavano solo numeri sulla luce.'],
+      ['Una misura ogni 10 minuti', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti. Puoi anche segnalare come ti senti in qualsiasi momento. A fine lezione invia i dati al ricercatore dal menu.']
+    ],
+    b_sound_now: 'dB · suono ora', b_not_active: 'Suono non attivo', b_paused: 'Suono in pausa', b_rec: p => `${p} % registrato`,
+    b_next: (h, m) => `Prossima misura ${h} · tra ${m} min`, b_due: h => `Misura da fare · dalle ${h}`, b_snoozed: h => `Misura rimandata · alle ${h}`,
+    b_skipped: (h, n) => `Misura delle ${h} saltata · prossima ${n}`, b_go: 'Inizia la misura',
+    b_today: n => `Oggi · ${n} ${n === 1 ? 'misura' : 'misure'}`, b_today_none: 'Oggi · nessuna misura', b_last: (h, ev) => `Ultima alle ${h} · luce ${ev} lx`,
     menu_lang: 'Lingua', version: 'Versione'
   },
   en: {
@@ -134,7 +150,7 @@ export const STR = {
     wel_body: 'During the lecture COMFY measures the light on your face and the sound around you, and every 20 minutes it asks how you feel. Each measurement takes about 2 minutes.',
     wel_p1: 'Setup', wel_p1s: 'profile, seat and light calibration: about 3 minutes',
     wel_p2: 'Monitoring', wel_p2s: 'phone on the desk, COMFY open, black screen',
-    wel_p3: 'Selfies', wel_p3s: 'you take them with the Camera app: COMFY analyses them on the phone and sends them to no one. You can delete them from your Photos whenever you like.',
+    wel_p3: 'Selfies', wel_p3s: 'you take them inside COMFY: they are analysed on the phone and no photo is saved or sent.',
     wel_start: 'Start',
     step: n => `STEP ${n} OF 4`,
     prof_title: 'Your profile',
@@ -155,8 +171,8 @@ export const STR = {
     cal_ref_body: 'The researcher holds the reference phone next to your eyes, screen facing where you look, and tells you the value. Stay seated in this position until the selfie.',
     cal_ref_label: 'Illuminance value (lx)',
     cal_ref_missing: 'Enter the value given by the researcher (between 5 and 5000 lx).',
-    cal_selfie_title: 'Take a selfie with the Camera',
-    selfie_1: 'Open the Camera app', selfie_1s: 'front camera, phone about 30 cm away, looking towards the desk, then shoot',
+    cal_selfie_title: 'The calibration selfie',
+    selfie_1: 'Open the Camera app', selfie_1s: 'front camera, phone in front of your face at eye level, about 30 cm away, then shoot',
     selfie_2: 'Come back and choose the selfie', selfie_2s: 'COMFY reads ISO, exposure time and capture time',
     selfie_tip: 'Do not use filters, Portrait mode or the screen flash.',
     choose_selfie: 'Choose the selfie',
@@ -187,7 +203,7 @@ export const STR = {
     test_body: 'If the researcher gives you a new reference value, enter it: COMFY compares it with the illuminance computed from the selfie.',
     test_saved: 'Test measurement saved',
     // ---- block 2
-    cam_title: 'The selfie', cam_body: 'Hold the phone about 30 cm away, look towards the desk and keep your face inside the oval. Then tap Shoot.',
+    cam_title: 'The selfie', cam_body: 'Hold the phone in front of your face, at eye level, about 30 cm away, with your face inside the oval. Then tap Shoot.',
     cam_shoot: 'Shoot', cam_starting: 'Starting the camera…', cam_denied: 'COMFY cannot use the camera. Allow access when Safari asks, or use the Camera app.',
     cam_fallback: 'Use the Camera app', cam_fallback_s: 'If shooting here does not work: take the selfie with the Camera app and choose it from the library.',
     cam_retake: 'Retake the selfie',
@@ -201,7 +217,7 @@ export const STR = {
     glare_none: 'I don\'t know where it comes from', glare_type_q: 'What is it?', glare_draw_first: 'Outline the area that bothers you most, or tap “I don\'t know where it comes from”.', glare_type_missing: 'Choose what the selected area is.',
     glare_zone: (z, d) => `${z} · about ${d}° from your line of sight · drag to move`,
     zone: { screen: 'Central view', ceiling: 'Up', desk: 'Down / desk', left: 'Left side', right: 'Right side' },
-    src: { window_daylight: 'Window / daylight', artificial_light: 'Artificial light', screen: 'Screen', reflection: 'Reflection', other: 'Other', not_sure: 'Not sure' },
+    src: { window_daylight: 'Window / daylight', artificial_light: 'Artificial light', screen: 'Screen', board_iwb: 'Board or interactive whiteboard', other: 'Other', not_sure: 'Not sure' },
     th_title: 'How do you feel at your seat?', tsv_q: 'Thermal sensation', tsv: ['Cold', 'Cool', 'Slightly cool', 'Neutral', 'Slightly warm', 'Warm', 'Hot'],
     pref_q: 'Right now you would prefer to be…', pref: { cooler: 'Cooler', no_change: 'No change', warmer: 'Warmer' },
     acc_q: 'Is the thermal environment acceptable to you?', th_missing: 'Answer the thermal preference and acceptability questions.',
@@ -232,6 +248,22 @@ export const STR = {
     send_text: (id, dev, v, n, a, c) => `COMFY data of participant ${id}.\nPhone: ${dev} · App ${v}\nMeasurements: ${n}\n\nAttached files:\n· ${a} (analysis data)\n· ${c} (complete backup copy)\n\nSent by COMFY for iPhone.`,
     update_ready: 'A new version of COMFY is available.', update_go: 'Update',
     menu: 'Menu', m_data: 'DATA', m_mon: 'MONITORING', m_help: 'HELP', m_tutorial: 'How it works',
+    // ---- v0.3
+    ill_ok: 'At eye level', ill_bad: 'Not from below', cam_open: 'Open the camera',
+    glasses_note: 'If you wear glasses, take them off before the shot',
+    glasses_detected: 'Glasses detected · take them off and retake the selfie', glasses_possible: 'You may be wearing glasses · take them off and retake the selfie',
+    glasses_override: 'I am not wearing glasses', glasses_exp: 'Experimental visual check',
+    ins_label: 'BEFORE YOU START', ins_done: 'Got it', ins_menu: 'Instructions',
+    ins: [
+      ['What COMFY is', 'COMFY is a research app on comfort in study spaces. During the lecture it records the sound environment and, with a short selfie, measures the light reaching your face. Every 10 minutes it asks how you feel: by comparing measurements and answers, the study explores the relations between light, sound and your perception of comfort.'],
+      ['Phone on the desk, black screen', 'Start monitoring and lay the phone on the desk, screen up and always in the same spot. COMFY dims the screen by itself. Do not lock the phone or switch apps: otherwise sound stops being recorded.'],
+      ['No glasses during the selfie', 'Take off your glasses before each selfie: lenses change the light the camera measures on your skin. Hold the phone in front of your face, at eye level.', 'No photo is saved: only light values are extracted from the selfie.'],
+      ['One measurement every 10 minutes', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes. You can also report how you feel at any time. At the end of the lecture send the data to the researcher from the menu.']
+    ],
+    b_sound_now: 'dB · sound now', b_not_active: 'Sound not active', b_paused: 'Sound paused', b_rec: p => `${p} % recorded`,
+    b_next: (h, m) => `Next measurement ${h} · in ${m} min`, b_due: h => `Measurement due · since ${h}`, b_snoozed: h => `Measurement postponed · at ${h}`,
+    b_skipped: (h, n) => `Measurement at ${h} skipped · next ${n}`, b_go: 'Start the measurement',
+    b_today: n => `Today · ${n} ${n === 1 ? 'measurement' : 'measurements'}`, b_today_none: 'Today · no measurements', b_last: (h, ev) => `Last at ${h} · light ${ev} lx`,
     menu_lang: 'Language', version: 'Version'
   }
 };

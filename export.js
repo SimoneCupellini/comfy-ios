@@ -35,7 +35,9 @@ export const COMPLETE_COLUMNS = [
   ...SOUND_COLUMNS,
   // colonne della versione iPhone (web)
   'platform', 'room_id', 'seat_zone', 'seat_rows', 'seat_seats', 'seat_dist_window_m', 'selfie_source', 'selfie_capture_timestamp', 'selfie_age_s', 'lens_model', 'image_px',
-  'reminder_timestamp', 'monitoring_started_timestamp'
+  'reminder_timestamp', 'monitoring_started_timestamp', 'glasses_user_override',
+  // ROI alta-guancia compatta (solo confronto, non usata per Ev)
+  'ym_compact_left', 'ym_compact_right', 'ym_compact', 'roi_compact_pixels', 'roi_compact_clipping_ratio', 'roi_compact_left_right_difference', 'calibration_kprime_compact', 'ev_compact_lux', 'roi_compact_method'
 ];
 
 export const ANALYSIS_COLUMNS = [
