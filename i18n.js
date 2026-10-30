@@ -99,7 +99,8 @@ export const STR = {
     res_title: 'Misura salvata', res_sched: 'Misura programmata', res_vol: 'Segnalazione volontaria', res_light: 'Luce sul volto', res_sound: 'Ambiente sonoro · ultimi 5 min', res_na: 'non disponibile',
     res_back: 'Torna al monitoraggio', save_meas: 'Salva la misura',
     // monitoraggio
-    mon_start: 'Avvia monitoraggio', mon_start_s: 'Lascia il telefono sul banco con COMFY aperto: lo schermo diventa nero e COMFY registra il suono. Ogni 10 minuti suona per la misura.',
+    mon_start: 'Avvia monitoraggio', mon_start_s: 'Attiva il monitoraggio continuo qui sotto e lascia il telefono sul banco con COMFY aperto: lo schermo diventa nero e COMFY registra il suono. Ogni 10 minuti suona per la misura.',
+    mon_switch: 'Monitoraggio continuo', mon_switch_on: 'Suono registrato · promemoria ogni 10 min', mon_switch_off: 'Spento · attivalo all\'inizio della lezione',
     mon_resume: 'Riprendi il monitoraggio', mon_paused: t => `Monitoraggio in pausa dalle ${t}: tocca per riprendere`,
     mon_active: 'Monitoraggio attivo', mon_next: t => `Prossima misura alle ${t}`, mon_black: 'Schermo nero', mon_stop: 'Termina la lezione',
     mon_stop_confirm: 'Termina davvero? Il suono smette di essere registrato e non arrivano più promemoria. I dati restano salvati.',
@@ -121,6 +122,7 @@ export const STR = {
     update_ready: 'È disponibile una nuova versione di COMFY.', update_go: 'Aggiorna',
     menu: 'Menu', m_data: 'DATI', m_mon: 'MONITORAGGIO', m_help: 'AIUTO', m_tutorial: 'Come funziona',
     // ---- v0.3
+    dim_in: s => `Lo schermo si oscura da solo tra ${s} s per risparmiare batteria · tocca qui per oscurarlo ora`, dim_tap: 'Tocca qui per oscurare lo schermo',
     ill_ok: 'All\'altezza degli occhi', ill_bad: 'Non dal basso', cam_open: 'Apri la fotocamera',
     glasses_note: 'Se porti gli occhiali, toglili prima dello scatto',
     glasses_detected: 'Occhiali rilevati · toglili e rifai il selfie', glasses_possible: 'Forse indossi occhiali · toglili e rifai il selfie',
@@ -130,7 +132,7 @@ export const STR = {
       ['Cos\'è COMFY', 'COMFY è un\'app di ricerca sul comfort negli spazi di studio. Durante la lezione registra l\'ambiente sonoro e, con un breve selfie, misura la luce che arriva sul tuo volto. Ogni 10 minuti ti chiede come ti senti: confrontando misure e risposte, lo studio indaga le relazioni tra luce, suono e la tua percezione del comfort.'],
       ['Telefono sul banco, schermo nero', 'Avvia il monitoraggio e appoggia il telefono sul banco, con lo schermo verso l\'alto e sempre nello stesso punto. COMFY oscura lo schermo da solo. Non bloccare il telefono e non cambiare app: altrimenti il suono smette di essere registrato.'],
       ['Senza occhiali durante il selfie', 'Togli gli occhiali prima di ogni selfie: le lenti cambiano la luce che la fotocamera misura sulla pelle. Tieni il telefono davanti al viso, all\'altezza degli occhi.', 'Nessuna foto viene salvata: dal selfie si ricavano solo numeri sulla luce.'],
-      ['Una misura ogni 10 minuti', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti. Puoi anche segnalare come ti senti in qualsiasi momento. A fine lezione invia i dati al ricercatore dal menu.']
+      ['Ogni 10 minuti: sondaggio e selfie', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti: rispondi al sondaggio e scatta il selfie, che serve a misurare la luce sul tuo volto. Puoi anche segnalare come ti senti in qualsiasi momento con il pulsante che lampeggia nella Home. A fine lezione invia i dati al ricercatore dal menu.']
     ],
     b_sound_now: 'dB · suono ora', b_not_active: 'Suono non attivo', b_paused: 'Suono in pausa', b_rec: p => `${p} % registrato`,
     b_next: (h, m) => `Prossima misura ${h} · tra ${m} min`, b_due: h => `Misura da fare · dalle ${h}`, b_snoozed: h => `Misura rimandata · alle ${h}`,
@@ -228,7 +230,8 @@ export const STR = {
     ac_missing: 'Select the main sound source.', slider_hint: 'Tap the scale to answer',
     res_title: 'Measurement saved', res_sched: 'Scheduled measurement', res_vol: 'Voluntary report', res_light: 'Light on the face', res_sound: 'Sound · last 5 min', res_na: 'not available',
     res_back: 'Back to monitoring', save_meas: 'Save the measurement',
-    mon_start: 'Start monitoring', mon_start_s: 'Leave the phone on the desk with COMFY open: the screen turns black and COMFY records sound. Every 10 minutes it rings for a measurement.',
+    mon_start: 'Start monitoring', mon_start_s: 'Turn on continuous monitoring below and leave the phone on the desk with COMFY open: the screen turns black and COMFY records sound. Every 10 minutes it rings for a measurement.',
+    mon_switch: 'Continuous monitoring', mon_switch_on: 'Sound recorded · reminder every 10 min', mon_switch_off: 'Off · turn it on at the start of the lecture',
     mon_resume: 'Resume monitoring', mon_paused: t => `Monitoring paused since ${t}: tap to resume`,
     mon_active: 'Monitoring on', mon_next: t => `Next measurement at ${t}`, mon_black: 'Black screen', mon_stop: 'End the lecture',
     mon_stop_confirm: 'End now? Sound stops being recorded and reminders stop. Your data stays saved.',
@@ -249,6 +252,7 @@ export const STR = {
     update_ready: 'A new version of COMFY is available.', update_go: 'Update',
     menu: 'Menu', m_data: 'DATA', m_mon: 'MONITORING', m_help: 'HELP', m_tutorial: 'How it works',
     // ---- v0.3
+    dim_in: s => `The screen dims by itself in ${s} s to save battery · tap here to dim it now`, dim_tap: 'Tap here to dim the screen',
     ill_ok: 'At eye level', ill_bad: 'Not from below', cam_open: 'Open the camera',
     glasses_note: 'If you wear glasses, take them off before the shot',
     glasses_detected: 'Glasses detected · take them off and retake the selfie', glasses_possible: 'You may be wearing glasses · take them off and retake the selfie',
@@ -258,7 +262,7 @@ export const STR = {
       ['What COMFY is', 'COMFY is a research app on comfort in study spaces. During the lecture it records the sound environment and, with a short selfie, measures the light reaching your face. Every 10 minutes it asks how you feel: by comparing measurements and answers, the study explores the relations between light, sound and your perception of comfort.'],
       ['Phone on the desk, black screen', 'Start monitoring and lay the phone on the desk, screen up and always in the same spot. COMFY dims the screen by itself. Do not lock the phone or switch apps: otherwise sound stops being recorded.'],
       ['No glasses during the selfie', 'Take off your glasses before each selfie: lenses change the light the camera measures on your skin. Hold the phone in front of your face, at eye level.', 'No photo is saved: only light values are extracted from the selfie.'],
-      ['One measurement every 10 minutes', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes. You can also report how you feel at any time. At the end of the lecture send the data to the researcher from the menu.']
+      ['Every 10 minutes: survey and selfie', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes: answer the survey and take the selfie, which measures the light on your face. You can also report how you feel at any time with the blinking button on Home. At the end of the lecture send the data to the researcher from the menu.']
     ],
     b_sound_now: 'dB · sound now', b_not_active: 'Sound not active', b_paused: 'Sound paused', b_rec: p => `${p} % recorded`,
     b_next: (h, m) => `Next measurement ${h} · in ${m} min`, b_due: h => `Measurement due · since ${h}`, b_snoozed: h => `Measurement postponed · at ${h}`,

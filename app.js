@@ -6,9 +6,10 @@ const L = await import('./light.js' + VQ);
 const { SoundEngine, AUDIO_SOURCE } = await import('./sound.js' + VQ);
 const X = await import('./export.js' + VQ);
 const { createDiagram } = await import('./diagram.js' + VQ);
+const INS = await import('./instructions.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.3.0';
+export const APP_VERSION = 'web-ios-0.4.1';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -131,32 +132,22 @@ function showWelcome(again = false) {
   $('#go').onclick = () => { if (!S.welcomed) S.welcomed = Date.now(); save(); route(); };
 }
 
-const ILL = {
-  phone: `<svg viewBox="0 0 300 150"><rect x="20" y="96" width="260" height="14" rx="5" fill="#D8CCC4"/><rect x="40" y="110" width="10" height="34" fill="#C9BBB2"/><rect x="250" y="110" width="10" height="34" fill="#C9BBB2"/>
-    <g transform="translate(110 72) skewX(-25)"><rect width="84" height="24" rx="6" fill="#1D1A18"/><rect x="5" y="4" width="74" height="16" rx="3" fill="#000"/></g>
-    <circle cx="150" cy="40" r="22" fill="#F6E9E3"/><path d="M142 32h16v12h-16zM146 44v4M154 44v4M140 50h20" stroke="#A4472B" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <path d="M182 30q10 10 0 20M190 24q16 16 0 32" stroke="#A4472B" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`,
-  glasses: `<svg viewBox="0 0 300 150"><circle cx="150" cy="78" r="46" fill="#E9C2A6"/><path d="M104 70q4-50 50-46q40 4 42 42q-20-16-46-14q-26 2-46 18z" fill="#4A3A33"/>
-    <circle cx="134" cy="80" r="3" fill="#1D1A18"/><circle cx="166" cy="80" r="3" fill="#1D1A18"/><path d="M140 104q10 7 20 0" stroke="#1D1A18" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <g transform="translate(60 -12) rotate(-14 150 80)" opacity=".9"><circle cx="132" cy="80" r="14" fill="none" stroke="#1D1A18" stroke-width="3.5"/><circle cx="168" cy="80" r="14" fill="none" stroke="#1D1A18" stroke-width="3.5"/><path d="M146 80h8" stroke="#1D1A18" stroke-width="3.5"/></g>
-    <path d="M196 54l26-10" stroke="#A4472B" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 5"/></svg>`,
-  clock: `<svg viewBox="0 0 300 150"><circle cx="150" cy="75" r="56" fill="#F6E9E3"/><circle cx="150" cy="75" r="56" fill="none" stroke="#A4472B" stroke-width="8" stroke-dasharray="58.6 293" transform="rotate(-90 150 75)" stroke-linecap="round"/>
-    <path d="M150 75V44M150 75l18 10" stroke="#1D1A18" stroke-width="4" stroke-linecap="round"/><text x="150" y="146" font-size="15" font-weight="700" text-anchor="middle" fill="#A4472B" font-family="-apple-system,system-ui,sans-serif">10 min</text></svg>`,
-  what: `<svg viewBox="0 0 300 150">${[['#FFC94A', 70, 'M70 58v-6M70 98v6M50 78h-6M96 78h6'], ['#A4472B', 150, ''], ['#F7B49B', 230, '']].map(([c, x, p], i) => `<circle cx="${x}" cy="78" r="34" fill="${i === 1 ? '#F6E9E3' : '#FFF4E8'}"/>`).join('')}
-    <circle cx="70" cy="78" r="12" fill="#FFC94A"/><path d="M70 56v-6M70 100v6M48 78h-6M98 78h-6M55 63l-4-4M85 93l4 4M55 93l-4 4M85 63l4-4" stroke="#E0A92A" stroke-width="3" stroke-linecap="round"/>
-    <path d="M136 78h6l8-14 8 28 8-20 6 6h6" stroke="#A4472B" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="230" cy="78" r="16" fill="none" stroke="#A4472B" stroke-width="3"/><circle cx="224" cy="74" r="2" fill="#A4472B"/><circle cx="236" cy="74" r="2" fill="#A4472B"/><path d="M223 84q7 6 14 0" stroke="#A4472B" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`
-};
-const INS_ILL = ['what', 'phone', 'glasses', 'clock'];
+let stopArt = null;
 function showInstructions(i, fromMenu = false) {
+  if (stopArt) { stopArt(); stopArt = null; }
   const P = STR[lang()].ins, n = P.length, [title, body, note] = P[i];
-  screen(`<main class="body">${topbar()}<div class="step">${t('ins_label')} · ${i + 1}/${n}</div>
-    <div class="illus">${ILL[INS_ILL[i]]}</div><h1>${title}</h1><p class="t">${body}</p>
-    ${note ? `<div class="card ok"><div class="s"><b>${note}</b></div></div>` : ''}
-    <div class="dots">${P.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>
-    <div class="spacer"></div><button class="btn" id="go" type="button">${i < n - 1 ? t('next') : t('ins_done')}</button>
-    ${i > 0 ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
-  $('#go').onclick = () => { if (i < n - 1) showInstructions(i + 1, fromMenu); else { if (!S.instructionsSeen) { S.instructionsSeen = Date.now(); save(); } route(); } };
+  app.innerHTML = `<main class="ins">
+    <div class="instop"><span>${t('ins_label')}</span><button class="inslang" id="lang" type="button">${lang() === 'it' ? 'IT' : 'EN'}</button></div>
+    <canvas class="insart" id="art" aria-hidden="true"></canvas>
+    <div class="insnum">${i + 1}</div><h1>${title}</h1><p>${body}</p>${note ? `<p class="insnote">${note}</p>` : ''}
+    <div class="insfoot"><div class="insdots">${P.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>
+    <button class="insbtn" id="go" type="button">${i < n - 1 ? t('next') : t('ins_done')}</button>
+    ${i > 0 ? `<button class="insback" id="back" type="button">${t('back')}</button>` : ''}</div></main>`;
+  window.scrollTo(0, 0);
+  stopArt = INS.animate($('#art'), i);
+  $('#lang').onclick = () => { S.lang = lang() === 'it' ? 'en' : 'it'; save(); showInstructions(i, fromMenu); };
+  const leave = () => { if (stopArt) { stopArt(); stopArt = null; } };
+  $('#go').onclick = () => { if (i < n - 1) showInstructions(i + 1, fromMenu); else { leave(); if (!S.instructionsSeen) { S.instructionsSeen = Date.now(); save(); } route(); } };
   if (i > 0) $('#back').onclick = () => showInstructions(i - 1, fromMenu);
 }
 
@@ -447,7 +438,7 @@ async function startMonitoring() {
 function stopMonitoring() { S.monitor.running = false; S.monitor.endedMs = Date.now(); save(); sound.stop(); try { wake && wake.release(); } catch (e) { } hideBlack(); showHome(); }
 function monitoringPaused() { return S.monitor.running && !sound.running(); }
 
-function armIdle() { clearTimeout(idleTimer); if (S.monitor.running && !inFlow && !S.monitor.pending && sound.running()) idleTimer = setTimeout(() => { if (!inFlow && $('#home')) showBlack(); }, 20000); }
+function armIdle() { clearTimeout(idleTimer); idleAt = 0; if (S.monitor.running && !inFlow && !S.monitor.pending && sound.running()) { idleAt = Date.now() + 20000; idleTimer = setTimeout(() => { if (!inFlow && $('#home')) showBlack(); }, 20000); } }
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => armIdle(), { passive: true }));
 
 function showBlack() {
@@ -724,30 +715,33 @@ function showHome() {
   const pausedHero = `<div class="warnhero"><div class="h">${t('mon_paused', hhmm(mon.pausedSinceMs || Date.now()))}</div><p class="t" style="margin:4px 0 10px">${t('mon_rules')}</p><button class="btn" id="start" type="button">${t('mon_resume')}</button></div>`;
   let hero;
   if (!mon.running) hero = `<div class="hero dialhero"><div class="dial">${dialSvg(NaN)}<div class="v"><b>–</b><span>${t('b_sound_now')}</span></div></div>
-      <div class="pillrow"><span class="pl">${t('b_not_active')}</span></div><p class="t small" style="margin:10px 0">${t('mon_start_s')}</p><button class="btn" id="start" type="button">${t('mon_start')}</button></div>`;
+      <div class="pillrow"><span class="pl">${t('b_not_active')}</span></div><p class="t small" style="margin:10px 0 2px">${t('mon_start_s')}</p></div>`;
   else if (paused) hero = `${pausedHero}<div class="hero dialhero"><div class="dial">${dialSvg(NaN, true)}<div class="v"><b>–</b><span>${t('b_sound_now')}</span></div></div><div class="pillrow"><span class="pl warn">${t('b_paused')}</span></div></div>`;
   else hero = `<div class="hero dialhero"><div class="dial" id="dial">${dialSvg(la)}<div class="v"><b id="dialv">${Number.isFinite(la) ? fmt(la, 0) : '–'}</b><span>${t('b_sound_now')}</span></div></div>
       <div id="spark">${sparkSvg()}</div><div class="pillrow" id="pills">${statePill()}<span class="pl" id="rec">${t('b_rec', Math.round(sound.fracValid(300) * 100))}</span></div></div>
-      ${mon.pending ? `<button class="btn" id="go" type="button">${t('b_go')}</button>` : `<button class="btn sm" id="blackbtn" type="button">${t('mon_black')}</button>`}`;
-  screen(`<main class="body" id="home">${topbar(true)}${hero}<div id="msg"></div>
-    <button class="card action" id="vol" type="button"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>
+      ${mon.pending ? `<button class="btn" id="go" type="button">${t('b_go')}</button>` : `<div class="dimhint" id="dimhint">${dimHint()}</div>`}`;
+  const sw = `<div class="card swcard"><div class="flex"><div class="ic">${IC.mic}</div><div style="flex:1"><div class="h">${t('mon_switch')}</div><div class="s">${!mon.running ? t('mon_switch_off') : paused ? t('b_paused') : t('mon_switch_on')}</div></div>
+      <button class="sw ${mon.running ? 'on' : ''}" id="sw" type="button" role="switch" aria-checked="${mon.running}" aria-label="${t('mon_switch')}"><i></i></button></div></div>`;
+  screen(`<main class="body" id="home">${topbar(true)}${hero}${sw}<div id="msg"></div>
+    <button class="card action blink" id="vol" type="button"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>
     <div class="card"><div class="h">${todays.length ? t('b_today', todays.length) : t('b_today_none')}</div>
       <div class="s">${last ? t('b_last', last.capture_timestamp.slice(11, 16), fmt(+last.ev_lux)) : t('seat_chosen', S.profile.seat.rows, S.profile.seat.seats)}</div></div>
-    ${mon.running ? `<button class="linkbtn" id="stop" type="button">${t('mon_stop')}</button>` : ''}
     <div class="foot">${t('version')} ${APP_VERSION} · ${S.participant_id}</div></main>`);
   const st = $('#start'); if (st) st.onclick = startMonitoring;
-  const bl = $('#blackbtn'); if (bl) bl.onclick = showBlack;
+  const dh = $('#dimhint'); if (dh) dh.onclick = showBlack;
   const go = $('#go'); if (go) go.onclick = () => startMeasurement('scheduled', mon.pending.dueMs);
   $('#vol').onclick = () => startMeasurement('user_initiated');
-  const sp = $('#stop'); if (sp) sp.onclick = confirmStop;
+  $('#sw').onclick = () => mon.running ? confirmStop() : startMonitoring();
 }
-let sparkTick = 0;
+let sparkTick = 0, idleAt = 0;
+function dimHint() { const s = Math.max(0, Math.ceil((idleAt - Date.now()) / 1000)); return idleAt && s > 0 ? t('dim_in', s) : t('dim_tap'); }
 function updateHome() {
   if (!$('#home') || !S.monitor.running || monitoringPaused()) return;
   const la = sound.lastLa, v = $('#dialv'), d = $('#dial');
   if (v) v.textContent = Number.isFinite(la) ? fmt(la, 0) : '–';
   if (d) d.firstElementChild.outerHTML = dialSvg(la);
   const p = $('#pills'); if (p) p.innerHTML = `${statePill()}<span class="pl" id="rec">${t('b_rec', Math.round(sound.fracValid(300) * 100))}</span>`;
+  const dh = $('#dimhint'); if (dh) dh.textContent = dimHint();
   if (++sparkTick % 5 === 0) { const s = $('#spark'); if (s) s.innerHTML = sparkSvg(); }
 }
 function confirmStop() {
