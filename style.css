@@ -334,3 +334,11 @@ span.shside{border:none;background:none}
 .homea.haschip{--ring:clamp(150px,calc(100svh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 545px),290px)}
 .homea .volb .h{font-size:min(19px,4.6vw)}
 @media (max-width:380px){.homea .volb .ic{width:44px;height:44px}.homea .card.volb{padding:17px 14px}}
+
+/* ---- v0.10: istruzioni a scorrimento */
+.insbody{display:flex;flex-direction:column;will-change:transform}
+.insbody.fromr{animation:insr .28s ease-out}
+.insbody.froml{animation:insl .28s ease-out}
+@keyframes insr{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes insl{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.insbody.fromr,.insbody.froml{animation:none}}

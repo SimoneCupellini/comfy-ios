@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.9.0';
+export const APP_VERSION = 'web-ios-0.10.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -179,13 +179,13 @@ function showWelcome(again = false) {
 }
 
 let stopArt = null;
-function showInstructions(i, fromMenu = false) {
+function showInstructions(i, fromMenu = false, dir = 0) {
   if (stopArt) { stopArt(); stopArt = null; }
   const P = STR[lang()].ins, n = P.length, [title, body, note] = P[i];
   app.innerHTML = `<main class="ins">
     <div class="instop"><span>${t('ins_label')}</span><button class="inslang" id="lang" type="button">${lang() === 'it' ? 'IT' : 'EN'}</button></div>
-    <canvas class="insart" id="art" aria-hidden="true"></canvas>
-    <div class="insnum">${i + 1}</div><h1>${title}</h1><p>${body}</p>${note ? `<p class="insnote">${note}</p>` : ''}
+    <div class="insbody ${dir > 0 ? 'fromr' : dir < 0 ? 'froml' : ''}" id="insb"><canvas class="insart" id="art" aria-hidden="true"></canvas>
+    <div class="insnum">${i + 1}</div><h1>${title}</h1><p>${body}</p>${note ? `<p class="insnote">${note}</p>` : ''}</div>
     <div class="insfoot"><div class="insdots">${P.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>
     <button class="insbtn" id="go" type="button">${i < n - 1 ? t('next') : t('ins_done')}</button>
     ${i > 0 ? `<button class="insback" id="back" type="button">${t('back')}</button>` : ''}</div></main>`;
@@ -193,8 +193,27 @@ function showInstructions(i, fromMenu = false) {
   stopArt = INS.animate($('#art'), i);
   $('#lang').onclick = () => { S.lang = lang() === 'it' ? 'en' : 'it'; save(); showInstructions(i, fromMenu); };
   const leave = () => { if (stopArt) { stopArt(); stopArt = null; } };
-  $('#go').onclick = () => { if (i < n - 1) showInstructions(i + 1, fromMenu); else { leave(); if (!S.instructionsSeen) { S.instructionsSeen = Date.now(); save(); } route(); } };
-  if (i > 0) $('#back').onclick = () => showInstructions(i - 1, fromMenu);
+  $('#go').onclick = () => { if (i < n - 1) showInstructions(i + 1, fromMenu, 1); else { leave(); if (!S.instructionsSeen) { S.instructionsSeen = Date.now(); save(); } route(); } };
+  if (i > 0) $('#back').onclick = () => showInstructions(i - 1, fromMenu, -1);
+  // scorrimento con il dito tra le pagine: verso sinistra avanti, verso destra indietro (il bordo sinistro resta al gesto «indietro»)
+  const main = app.querySelector('.ins'), insB = $('#insb');
+  let sx = 0, sy = 0, st = 0, on = false, horiz = false;
+  main.addEventListener('touchstart', e => { const p = e.touches[0]; on = e.touches.length === 1 && p.clientX > 24; horiz = false; sx = p.clientX; sy = p.clientY; st = Date.now(); }, { passive: true });
+  main.addEventListener('touchmove', e => {
+    if (!on) return; const p = e.touches[0], dx = p.clientX - sx, dy = p.clientY - sy;
+    if (!horiz) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dy) > Math.abs(dx)) { on = false; return; } horiz = true; }
+    const edge = (dx > 0 && i === 0) || (dx < 0 && i === n - 1);
+    insB.style.transition = 'none'; insB.style.transform = `translateX(${edge ? dx * 0.25 : dx}px)`; insB.style.opacity = String(1 - Math.min(0.5, Math.abs(dx) / 600));
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  main.addEventListener('touchend', e => {
+    if (!on || !horiz) return; on = false;
+    const p = e.changedTouches[0], dx = p.clientX - sx, v = Math.abs(dx) / Math.max(1, Date.now() - st);
+    const go = Math.abs(dx) > 70 || (Math.abs(dx) > 30 && v > 0.4);
+    if (go && dx < 0 && i < n - 1) showInstructions(i + 1, fromMenu, 1);
+    else if (go && dx > 0 && i > 0) showInstructions(i - 1, fromMenu, -1);
+    else { insB.style.transition = 'transform .2s ease-out, opacity .2s'; insB.style.transform = ''; insB.style.opacity = ''; }
+  }, { passive: true });
 }
 
 // ------------------------------------------------------------------ abbigliamento a immagini: T-shirt e camicia leggero, maglione medio, giacca pesante
@@ -597,14 +616,9 @@ function showReminder(dueMs) {
   reminderBeep = setInterval(() => { if (++beeps >= 3 || !reminderOpen) return clearInterval(reminderBeep); sound.beep(); }, 60000);
   const el = document.createElement('div'); el.id = 'remind'; reminderEl = el;
   el.innerHTML = `${LOGO.replace('width="30" height="30"', 'width="56" height="56"')}<h2>${t('rem_title')}</h2><p>${t('rem_body')}</p>
-    <button class="btn light" id="remgo" type="button">${t('rem_go')}</button><button class="btn ghost" id="remlater" type="button">${t('rem_later')}</button>`;
+    <button class="btn light" id="remgo" type="button">${t('rem_go')}</button>`;
   document.body.appendChild(el);
   $('#remgo').onclick = () => { closeReminderEl(); startMeasurement('scheduled', dueMs); };
-  $('#remlater').onclick = () => {
-    closeReminderEl(); logReminder(dueMs, 'snoozed');
-    S.monitor.pending = null; S.monitor.nextDueMs = Date.now() + 2 * 60000; S.monitor.snoozed = true; save();
-    showHome(); armIdle();
-  };
 }
 /** Misura non iniziata ne' rimandata entro 10 minuti: viene registrata come saltata e il ciclo riparte. */
 function skipPending() {
@@ -1132,6 +1146,7 @@ async function checkUpdate() {
   } catch (e) { }
 }
 
+if (S.monitor.snoozed) { S.monitor.snoozed = false; save(); }   // il rinvio di 2 minuti non esiste piu' (0.10)
 if (S.monitor.running && !S.monitor.pausedSinceMs) { S.monitor.pausedSinceMs = Date.now(); save(); }   // dopo un ricaricamento serve un tocco per riattivare il microfono
 route();
 checkUpdate();

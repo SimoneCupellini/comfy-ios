@@ -1,7 +1,7 @@
 // COMFY web (iPhone) – illustrazioni animate delle istruzioni.
 // Porting di InstructionMotionView.kt (Android 2.19.26): tratto bianco su terracotta, riempimenti bianchi trasparenti,
-// frecce color pesca, badge di conferma. Scene: 0 cos'e' COMFY · 1 telefono sul banco a schermo nero · 2 occhiali tolti · 3 privacy del microfono · 4 sondaggio e selfie.
-const PERIOD = [4200, 4800, 2600, 5600, 5200];
+// frecce color pesca, badge di conferma. Scene: 0 cos'e' COMFY · 1 telefono sul banco a schermo nero · 2 sondaggio e selfie · 3 occhiali tolti · 4 privacy del microfono.
+const PERIOD = [4200, 4800, 5200, 2600, 5600];
 const WHITE = '#FFFFFF', ACCENT = '#FFD8CC', BRAND = '#A4472B';
 const ease = x => { const v = Math.max(0, Math.min(1, x)); return v * v * (3 - 2 * v); };
 const phase = (t, a, b) => ease((t - a) / (b - a));
@@ -168,7 +168,7 @@ function drawPrivacy(g, w, h, t) {
   checkBadge(g, r.r + 22, r.t + 18, phase(t, 0.15, 0.25));
 }
 
-const SCENES = [drawActivation, drawTable, drawGlasses, drawPrivacy, drawSurvey];
+const SCENES = [drawActivation, drawTable, drawSurvey, drawGlasses, drawPrivacy];
 
 /** Avvia l'animazione della scena `mode` nel canvas; restituisce una funzione per fermarla. */
 export function animate(canvas, mode) {

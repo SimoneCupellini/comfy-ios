@@ -109,7 +109,7 @@ export const STR = {
     mon_sound: (l, f) => `Suono: ${l} · ${f} % dei secondi registrati negli ultimi 5 min`, mon_sound_wait: 'Suono: in avvio…',
     mon_mic_denied: 'COMFY non può usare il microfono. Consenti l\'accesso quando Safari lo chiede (o da Impostazioni › Safari › Microfono).',
     black_title: 'COMFY · monitoraggio attivo', black_tap: 'Tocca per tornare alla Home',
-    rem_title: 'È ora della misura', rem_body: 'Ci vogliono circa 2 minuti.', rem_go: 'Inizia', rem_later: 'Tra 2 minuti',
+    rem_title: 'È ora della misura', rem_body: 'Ci vogliono circa 2 minuti.', rem_go: 'Inizia',
     vol: 'Segnala come ti senti ora', vol_s: 'Misura fuori orario, quando vuoi',
     meas_today: 'Misure di oggi',
     // invio
@@ -131,9 +131,9 @@ export const STR = {
     ins: [
       ['Cos\'è COMFY', 'COMFY è un\'app di ricerca sul comfort negli spazi di studio. Durante la lezione registra l\'ambiente sonoro e, con un breve selfie, misura la luce che arriva sul tuo volto. Ogni 10 minuti ti chiede come ti senti: confrontando misure e risposte, lo studio indaga le relazioni tra luce, suono e la tua percezione del comfort.'],
       ['Telefono sul banco, schermo nero', 'Avvia il monitoraggio e appoggia il telefono sul banco, con lo schermo verso l\'alto e sempre nello stesso punto. COMFY oscura lo schermo da solo. Non bloccare il telefono e non cambiare app: altrimenti il suono smette di essere registrato.'],
+      ['Ogni 10 minuti: sondaggio e selfie', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti: rispondi al sondaggio e scatta il selfie, che serve a misurare la luce sul tuo volto. Puoi anche segnalare come ti senti in qualsiasi momento con il pulsante color mattone nella Home. A fine lezione invia i dati al ricercatore dal menu.'],
       ['Senza occhiali durante il selfie', 'Togli gli occhiali prima di ogni selfie: le lenti cambiano la luce che la fotocamera misura sulla pelle. Tieni il telefono davanti al viso, all\'altezza degli occhi.', 'Nessuna foto viene salvata: dal selfie si ricavano solo numeri sulla luce.'],
-      ['Le conversazioni non vengono registrate', 'COMFY usa il microfono solo per misurare quanto è forte il suono. Ogni secondo calcola un numero in decibel e scarta subito l\'audio: nessuna voce viene salvata, ascoltata o inviata.', 'Nel file per il ricercatore ci sono solo numeri, per esempio 46 dB.'],
-      ['Ogni 10 minuti: sondaggio e selfie', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti: rispondi al sondaggio e scatta il selfie, che serve a misurare la luce sul tuo volto. Puoi anche segnalare come ti senti in qualsiasi momento con il pulsante color mattone nella Home. A fine lezione invia i dati al ricercatore dal menu.']
+      ['Le conversazioni non vengono registrate', 'COMFY usa il microfono solo per misurare quanto è forte il suono. Ogni secondo calcola un numero in decibel e scarta subito l\'audio: nessuna voce viene salvata, ascoltata o inviata.', 'Nel file per il ricercatore ci sono solo numeri, per esempio 46 dB.']
     ],
     b_sound_now: 'dB · suono ora', b_not_active: 'Suono non attivo', b_paused: 'Suono in pausa', b_rec: p => `${p} % registrato`,
     b_next: (h, m) => `Prossima misura ${h} · tra ${m} min`, b_due: h => `Misura da fare · dalle ${h}`, b_snoozed: h => `Misura rimandata · alle ${h}`,
@@ -288,7 +288,7 @@ export const STR = {
     mon_sound: (l, f) => `Sound: ${l} · ${f} % of seconds recorded in the last 5 min`, mon_sound_wait: 'Sound: starting…',
     mon_mic_denied: 'COMFY cannot use the microphone. Allow access when Safari asks (or in Settings › Safari › Microphone).',
     black_title: 'COMFY · monitoring on', black_tap: 'Tap to go back to Home',
-    rem_title: 'Time for a measurement', rem_body: 'It takes about 2 minutes.', rem_go: 'Start', rem_later: 'In 2 minutes',
+    rem_title: 'Time for a measurement', rem_body: 'It takes about 2 minutes.', rem_go: 'Start',
     vol: 'Report how you feel now', vol_s: 'Extra measurement, whenever you want',
     meas_today: 'Measurements today',
     send: 'Send data to the researcher', send_s: n => `2 CSV files · ${n} measurements`, send_last: t => `Last sent: ${t}`,
@@ -309,9 +309,9 @@ export const STR = {
     ins: [
       ['What COMFY is', 'COMFY is a research app on comfort in study spaces. During the lecture it records the sound environment and, with a short selfie, measures the light reaching your face. Every 10 minutes it asks how you feel: by comparing measurements and answers, the study explores the relations between light, sound and your perception of comfort.'],
       ['Phone on the desk, black screen', 'Start monitoring and lay the phone on the desk, screen up and always in the same spot. COMFY dims the screen by itself. Do not lock the phone or switch apps: otherwise sound stops being recorded.'],
+      ['Every 10 minutes: survey and selfie', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes: answer the survey and take the selfie, which measures the light on your face. You can also report how you feel at any time with the brick-coloured button on Home. At the end of the lecture send the data to the researcher from the menu.'],
       ['No glasses during the selfie', 'Take off your glasses before each selfie: lenses change the light the camera measures on your skin. Hold the phone in front of your face, at eye level.', 'No photo is saved: only light values are extracted from the selfie.'],
-      ['Conversations are not recorded', 'COMFY uses the microphone only to measure how loud the sound is. Every second it computes a number in decibels and discards the audio straight away: no voice is saved, listened to or sent.', 'The file for the researcher contains only numbers, for example 46 dB.'],
-      ['Every 10 minutes: survey and selfie', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes: answer the survey and take the selfie, which measures the light on your face. You can also report how you feel at any time with the brick-coloured button on Home. At the end of the lecture send the data to the researcher from the menu.']
+      ['Conversations are not recorded', 'COMFY uses the microphone only to measure how loud the sound is. Every second it computes a number in decibels and discards the audio straight away: no voice is saved, listened to or sent.', 'The file for the researcher contains only numbers, for example 46 dB.']
     ],
     b_sound_now: 'dB · sound now', b_not_active: 'Sound not active', b_paused: 'Sound paused', b_rec: p => `${p} % recorded`,
     b_next: (h, m) => `Next measurement ${h} · in ${m} min`, b_due: h => `Measurement due · since ${h}`, b_snoozed: h => `Measurement postponed · at ${h}`,
