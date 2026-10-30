@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.7.0';
+export const APP_VERSION = 'web-ios-0.8.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -294,26 +294,9 @@ function errorText(e) {
  * Prima prova lo scatto dentro COMFY (ImageCapture.takePhoto, che conserva ISO ed esposizione);
  * se non e' possibile, o la foto non ha i dati di esposizione, propone l'app Fotocamera + libreria.
  */
-// illustrazione: telefono all'altezza degli occhi (giusto) e dal basso (sbagliato)
+// illustrazione 3D (stesso modello della guida alla calibrazione): lo studente porta il telefono all'altezza degli occhi
 function selfieIllustration() {
-  const person = (x, ok) => {
-    const skin = '#E9C2A6', hair = '#4A3A33', shirt = ok ? '#A4472B' : '#B9ACA3', chair = '#D8CCC4';
-    const px = ok ? x + 58 : x + 44, py = ok ? 62 : 128;
-    return `<rect x="${x - 34}" y="150" width="58" height="8" rx="4" fill="${chair}"/><rect x="${x - 34}" y="104" width="8" height="54" rx="4" fill="${chair}"/><path d="M${x - 16} 152 h44 v34" stroke="#6B625C" stroke-width="9" stroke-linecap="round" fill="none"/>
-      <path d="M${x - 16} 94 q16 -8 30 0 l6 62 h-44z" fill="${shirt}"/>
-      ${ok ? `<path d="M${x + 4} 104 q22 4 ${px - x - 8} ${py - 98}" stroke="${skin}" stroke-width="9" stroke-linecap="round" fill="none"/>` : `<path d="M${x + 4} 108 q16 10 ${px - x - 8} ${py - 108}" stroke="${skin}" stroke-width="9" stroke-linecap="round" fill="none"/>`}
-      <circle cx="${x}" cy="70" r="20" fill="${skin}"/><path d="M${x - 20} 66 q2 -26 24 -24 q16 2 16 18 q-10 -8 -22 -6 q-10 2 -18 12z" fill="${hair}"/><circle cx="${x + 11}" cy="68" r="2.2" fill="#1D1A18"/>
-      <line x1="${x + 12}" y1="68" x2="${px - 4}" y2="${py}" stroke="${ok ? '#2E8B57' : '#C0392B'}" stroke-width="2" stroke-dasharray="4 4"/>
-      <rect x="${px - 4}" y="${py - 14}" width="8" height="28" rx="3" fill="#1D1A18" transform="rotate(${ok ? 0 : -35} ${px} ${py})"/>`;
-  };
-  const badge = (x, y, ok) => ok ? `<circle cx="${x}" cy="${y}" r="15" fill="#2E8B57"/><path d="M${x - 7} ${y} l5 5 l9 -10" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
-    : `<circle cx="${x}" cy="${y}" r="15" fill="#C0392B"/><path d="M${x - 6} ${y - 6} l12 12 M${x + 6} ${y - 6} l-12 12" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>`;
-  return `<div class="ill"><svg viewBox="0 0 360 230" role="img" aria-label="${esc(t('ill_ok'))} / ${esc(t('ill_bad'))}"><rect width="360" height="230" fill="#FFFFFF"/>
-    <rect x="8" y="8" width="168" height="214" rx="14" fill="#EEF7F1"/><rect x="184" y="8" width="168" height="214" rx="14" fill="#FBEDEA"/>
-    ${person(70, true)}${person(246, false)}<text x="134" y="98" font-size="10.5" fill="#2E8B57" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">30 cm</text>
-    ${badge(158, 30, true)}${badge(334, 30, false)}
-    <text x="92" y="212" font-size="12.5" font-weight="700" fill="#1E6B41" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">${esc(t('ill_ok'))}</text>
-    <text x="268" y="212" font-size="12.5" font-weight="700" fill="#A93226" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif">${esc(t('ill_bad'))}</text></svg></div>`;
+  return `<div class="ill3d"><video src="video/selfie3d_v1.mp4" poster="video/selfie3d_v1.jpg" autoplay muted loop playsinline preload="auto" aria-label="${esc(t('ill_3d'))}"></video><div class="lbl">${esc(t('ill_3d'))}</div></div>`;
 }
 const GLASSES_ICON = `<svg width="22" height="14" viewBox="0 0 44 28" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="15" r="8"/><circle cx="33" cy="15" r="8"/><path d="M19 15h6M3 12 1 6M41 12l2-6"/></svg>`;
 
@@ -339,7 +322,7 @@ function showCamera(opts) {
     if (source === 'in_app_takephoto' && err instanceof LightError && (err.code === 'no_exposure' || err.code === 'no_time')) { S.cameraMode = 'library'; save(); }
     $('#msg').innerHTML = errBox(errorText(err));
     const pl = $('#pickl'); if (pl) pl.hidden = false;
-    const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
+    const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.classList.remove('busy'); delete sh.dataset.busy; }
     if (camStream) startLive();
   }
   async function run(file, source) {
@@ -353,7 +336,7 @@ function showCamera(opts) {
       if (!liveOverride && (g.status === 'detected' || g.status === 'possible')) {
         $('#msg').innerHTML = `<div class="glass warn">${GLASSES_ICON}<div>${t(g.status === 'detected' ? 'glasses_detected' : 'glasses_possible')}<small>${t('glasses_exp')}</small></div></div>
           <button class="btn out" id="gover" type="button">${t('glasses_override')}</button>`;
-        const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
+        const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.classList.remove('busy'); delete sh.dataset.busy; }
         if (camStream) startLive();
         $('#gover').onclick = () => { r.glassesOverride = true; stopCam(); opts.onDone(r, source); };
         return;
@@ -364,18 +347,22 @@ function showCamera(opts) {
   let liveOverride = false, liveGlasses = false;
   function cameraStage() {
     screen(`${head}<div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="oval" id="oval" aria-hidden="true"></div><div class="livebar" id="live" role="status" aria-live="polite"></div></div>
-      <p class="t small">${t('cam_body')}</p><div id="gwarn"></div><div id="msg"></div><div class="spacer"></div>
-      <button class="btn" id="shoot" type="button" disabled>${t('cam_shoot')}</button>${pickLabel(true, true)}${back}</main>`);
+      <div id="gwarn"></div><div id="msg"></div><div class="spacer"></div>
+      <div class="shutrow"><button class="shside" id="libb" type="button" aria-label="${t('cam_fallback')}">${IC.lib}</button>
+        <button class="shutter" id="shoot" type="button" disabled aria-label="${t('cam_shoot')}"><i></i></button>
+        ${opts.onBack ? `<button class="shside txt" id="back" type="button">${t('back')}</button>` : '<span class="shside"></span>'}</div>
+      ${pickLabel(true, true)}</main>`);
     bindCommon();
+    $('#libb').onclick = () => $('#pick').click();
     $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('cam_starting')}</div>`;
     L.startCamera($('#vid')).then(st => { camStream = st; $('#msg').innerHTML = ''; $('#shoot').disabled = false; startLive(); if (M) setTimeout(() => startCoach('cam', '.camwrap'), 500); })
       .catch(err => { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; });
     $('#shoot').onclick = async () => {
       if (!camStream) return;
-      $('#shoot').disabled = true;
+      $('#shoot').disabled = true; $('#shoot').classList.add('busy'); $('#shoot').dataset.busy = '1';
       let file;
       try { file = await L.takePhoto(camStream); }
-      catch (err) { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; $('#shoot').disabled = false; return; }
+      catch (err) { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; $('#shoot').disabled = false; $('#shoot').classList.remove('busy'); delete $('#shoot').dataset.busy; return; }
       stopLive(); run(file, 'in_app_takephoto');
     };
   }
@@ -805,8 +792,14 @@ function showDetails(rec, back) {
     [t('rec_frac'), rec.sound5_frac_valid ? Math.round(rec.sound5_frac_valid * 100) + ' %' : '–'], ['k′', n(rec.calibration_kprime, 3)], [t('seat_title'), hy(rec.seat_rows) + ' · ' + hy(rec.seat_seats)]];
   screen(`<main class="body">${topbar()}<div class="step">${t('res_details').replace(' ›', '').toUpperCase()}</div><h1>${t('res_title')}</h1>
     <div class="card"><table class="kv">${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table></div>
-    <p class="t small">${t('det_note')}</p><div class="spacer"></div><button class="btn out" id="back" type="button">${t('back')}</button></main>`);
+    <p class="t small">${t('det_note')}</p><div id="msg"></div><div class="spacer"></div>
+    <button class="btn" id="exp" type="button">${t('det_export')}</button><button class="btn out" id="back" type="button">${t('back')}</button></main>`);
   $('#back').onclick = back;
+  $('#exp').onclick = async () => {
+    $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('send_preparing')}</div>`;
+    try { const pack = await researcherFiles(); $('#msg').innerHTML = ''; await shareFiles(pack.files, `COMFY – ${S.participant_id}`, '', $('#msg')); }
+    catch (e) { $('#msg').innerHTML = errBox(t('export_err') + ' ' + e.message); }
+  };
 }
 function endFlow() { C.stop(); stopCam(); M = null; inFlow = false; showHome(); if (S.monitor.running && sound.running()) setTimeout(showBlack, 1500); armIdle(); }
 
@@ -889,7 +882,7 @@ const BELL = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke
 const MOON_S = MOON_I.replace(/width="18" height="18"/, 'width="13" height="13"');
 function ringSvg(p, col, dim) {
   const size = 204, sw = 11, c0 = size / 2, r = c0 - sw / 2 - 2, c = 2 * Math.PI * r;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${c0}" cy="${c0}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>${p > 0.003
+  return `<svg width="100%" height="100%" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${c0}" cy="${c0}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>${p > 0.003
     ? `<circle cx="${c0}" cy="${c0}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${c0} ${c0})"${dim ? ' opacity=".35"' : ''}/>` : ''}</svg>`;
 }
 function ringState() {
@@ -906,11 +899,13 @@ function ringState() {
 }
 function ringHtml() { const rs = ringState(); return `<div class="ringbox" id="ring" role="timer">${ringSvg(rs.p, rs.col, rs.dim)}<div class="ringin">${rs.inner}</div></div>`; }
 function barsSvg() {
-  const n = 30, end = Math.floor(Date.now() / 1000), W = 300, H = 30, bw = W / n;
+  const n = 30, end = Math.floor(Date.now() / 1000), W = 300, H = 46, bw = W / n;
   const m = new Map(sound.history.filter(x => x.e > end - n).map(x => [x.e, x.la]));
+  // scala adattiva sugli ultimi 30 s (almeno 12 dB): le variazioni del suono si vedono anche in un'aula tranquilla
+  const vals = [...m.values()].filter(Number.isFinite), lo = vals.length ? Math.min(...vals) - 2 : 30, hi = Math.max(lo + 12, vals.length ? Math.max(...vals) + 1 : 42);
   let o = '';
   for (let i = 0; i < n; i++) {
-    const la = m.get(end - n + 1 + i), ok = Number.isFinite(la), v = ok ? Math.max(0.1, Math.min(1, (la - 20) / 60)) : 0.06, h = Math.max(3, H * v);
+    const la = m.get(end - n + 1 + i), ok = Number.isFinite(la), v = ok ? Math.max(0.12, Math.min(1, (la - lo) / (hi - lo))) : 0.06, h = Math.max(3, H * v);
     o += `<rect x="${(i * bw + bw * 0.2).toFixed(1)}" y="${((H - h) / 2).toFixed(1)}" width="${(bw * 0.6).toFixed(1)}" height="${h.toFixed(1)}" rx="${(bw * 0.3).toFixed(1)}" fill="var(--brand)" opacity="${ok ? (0.35 + 0.65 * v).toFixed(2) : 0.2}"/>`;
   }
   return `<svg class="bars" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${o}</svg>`;
@@ -929,20 +924,18 @@ function chipText() {
 const homeSigNow = () => [S.monitor.running, monitoringPaused(), !!S.monitor.pending, chipText(), lang(), themeEff()].join('|');
 let homeSig = '', ringInner = '';
 function showHome() {
-  const mon = S.monitor, today = dayStr();
-  const todays = S.measurements.filter(m => (m.capture_timestamp || '').startsWith(today)), last = todays[todays.length - 1];
+  const mon = S.monitor;
   const paused = monitoringPaused(), live = mon.running && !paused, chip = chipText();
   const pausedHero = `<div class="warnhero"><div class="h">${t('mon_paused', hhmm(mon.pausedSinceMs || Date.now()))}</div><p class="t" style="margin:4px 0 10px">${t('mon_rules')}</p><button class="btn" id="start" type="button">${t('mon_resume')}</button></div>`;
   const sw = `<div class="card swcard"><div class="flex"><div class="ic">${IC.mic}</div><div style="flex:1"><div class="h">${t('mon_switch')}</div><div class="s">${!mon.running ? t('mon_switch_off') : paused ? t('b_paused') : t('mon_switch_on')}</div></div>
       <button class="sw ${mon.running ? 'on' : ''}" id="sw" type="button" role="switch" aria-checked="${mon.running}" aria-label="${t('mon_switch')}"><i></i></button></div></div>`;
-  const vol = `<button class="card action ${live ? 'blink' : ''}" id="vol" type="button"><div class="flex"><div class="ic">${IC.face}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>`;
-  const todayCard = `<div class="card today"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${todays.length ? t('b_today', todays.length) : t('b_today_none')}</div>
-      <div class="s">${last ? t('b_last', last.capture_timestamp.slice(11, 16), fmt(+last.ev_lux)) : t('seat_chosen', S.profile.seat.rows, S.profile.seat.seats)}</div></div></div></div>`;
+  const vol = `<button class="card volb ${live ? 'glow' : ''}" id="vol" type="button"><div class="flex"><div class="ic">${IC.face.replace('#A4472B', '#fff')}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div><span class="chev" aria-hidden="true">›</span></div></button>`;
   const dim = `<button class="dimhint" id="dimhint" type="button">${MOON_S}<span id="dimt">${dimText()}</span></button>`;
   const off = navigator.onLine === false ? `<div class="offchip">${t('offline_home')}</div>` : '';
   const body = live && mon.pending
     ? `${ringHtml()}<button class="btn" id="go" type="button">${t('b_go')}</button>${sndCard()}${sw}<div id="msg"></div>`
-    : `${paused ? pausedHero : ''}${ringHtml()}${chip ? `<div class="cchip" id="cchip">${chip}</div>` : ''}${live ? sndCard() : ''}${sw}<div id="msg"></div>${vol}${live ? dim : ''}${todayCard}`;
+    : live ? `${ringHtml()}${chip ? `<div class="cchip" id="cchip">${chip}</div>` : ''}${vol}${sndCard()}${sw}<div id="msg"></div>${dim}`
+    : `${paused ? pausedHero : ''}${ringHtml()}${sw}<div id="msg"></div>${vol}`;
   screen(`<main class="body" id="home">${topbar('home')}${off}${body}
     <div class="foot">${t('version')} ${APP_VERSION} · ${S.participant_id}</div></main>`);
   homeSig = homeSigNow(); ringInner = ringState().inner;

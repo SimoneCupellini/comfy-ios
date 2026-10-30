@@ -269,3 +269,31 @@ html:has(.ins),body:has(.ins){background:var(--brand)}
 #app.swipeback{transition:transform .22s ease-out}
 .swshade{position:fixed;inset:0;pointer-events:none;z-index:40;background:linear-gradient(90deg,rgba(0,0,0,.12),transparent 40%);opacity:0}
 button.dimhint{background:none;border:none;font:inherit;font-size:12.5px;color:var(--mute);width:100%;padding:2px 10px;cursor:pointer}
+
+/* ---- v0.8: scatto circolare, figura 3D, Home senza tagli, «Segnala» in mattone */
+.shutrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:2px 0 4px}
+.shside{justify-self:start;width:46px;height:46px;border-radius:12px;border:1px solid var(--stroke);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:var(--ink)}
+.shside.txt{justify-self:end;width:auto;border:none;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--brand);padding:8px 4px}
+span.shside{border:none;background:none}
+.shutter{width:76px;height:76px;border-radius:50%;border:4px solid var(--brand);background:transparent;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .2s}
+.shutter i{display:block;width:60px;height:60px;border-radius:50%;background:var(--brand);transition:transform .12s}
+.shutter:active i{transform:scale(.86)}
+.shutter:disabled{opacity:.35;cursor:default}
+.shutter.busy{opacity:1;border-color:var(--line)}
+.shutter.busy i{width:44px;height:44px;background:transparent;border:4px solid var(--brand);border-right-color:transparent;animation:sp .9s linear infinite}
+.shutter:focus-visible{outline:3px solid #E39A3B;outline-offset:3px}
+.ill3d{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--stroke);background:#F6EEE7;aspect-ratio:1;max-height:34vh;margin:0 auto;width:100%}
+.ill3d video{display:block;width:100%;height:100%;object-fit:contain}
+.ill3d .lbl{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.92);color:#A4472B;font-size:12.5px;font-weight:700;border-radius:10px;padding:4px 9px}
+.ringbox{width:min(204px,27svh);height:min(204px,27svh)}
+.rmin{font-size:clamp(38px,6.4svh,52px)}
+.card.volb{background:var(--brand);border-color:var(--brand);color:#fff;padding:14px 13px}
+:root[data-theme="dark"] .card.volb{background:#A4472B;border-color:#A4472B}
+.volb .ic{background:rgba(255,255,255,.18)!important}.volb .h{color:#fff}.volb .s{color:rgba(255,255,255,.86)}
+.volb .chev{margin-left:auto;font-size:24px;line-height:1;opacity:.85}
+.volb.glow{animation:volglow 1.8s ease-in-out infinite}
+@keyframes volglow{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 6px var(--blinkglow)}}
+@media (prefers-reduced-motion:reduce){.volb.glow{animation:none}}
+.bars{height:44px}
+.camwrap{max-height:min(48vh,calc(100svh - 400px));min-height:200px}
+#gwarn:empty,#msg:empty{display:none}

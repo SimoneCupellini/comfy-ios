@@ -73,7 +73,7 @@ export const STR = {
     test_body: 'Se il ricercatore ti comunica un nuovo valore del taratore, inseriscilo: COMFY lo confronta con l\'illuminamento calcolato dal selfie.',
     test_saved: 'Misura di prova salvata',
     // ---- blocco 2
-    cam_title: 'Il selfie', cam_body: 'Tieni il telefono davanti al viso, all\'altezza degli occhi, a circa 30 cm, con il volto dentro l\'ovale. Poi tocca Scatta.',
+    cam_title: 'Il selfie', cam_body: 'Tieni il telefono davanti al viso, all\'altezza degli occhi, a circa 30 cm, con il volto dentro l\'ovale. Poi tocca il pulsante rotondo.',
     cam_shoot: 'Scatta', cam_starting: 'Avvio della fotocamera…', cam_denied: 'COMFY non può usare la fotocamera. Consenti l\'accesso quando Safari lo chiede, oppure usa l\'app Fotocamera.',
     cam_fallback: 'Usa l\'app Fotocamera', cam_fallback_s: 'Se lo scatto qui non funziona: scatta il selfie con l\'app Fotocamera e sceglilo dalla libreria.',
     cam_retake: 'Rifai il selfie',
@@ -132,7 +132,8 @@ export const STR = {
       ['Cos\'è COMFY', 'COMFY è un\'app di ricerca sul comfort negli spazi di studio. Durante la lezione registra l\'ambiente sonoro e, con un breve selfie, misura la luce che arriva sul tuo volto. Ogni 10 minuti ti chiede come ti senti: confrontando misure e risposte, lo studio indaga le relazioni tra luce, suono e la tua percezione del comfort.'],
       ['Telefono sul banco, schermo nero', 'Avvia il monitoraggio e appoggia il telefono sul banco, con lo schermo verso l\'alto e sempre nello stesso punto. COMFY oscura lo schermo da solo. Non bloccare il telefono e non cambiare app: altrimenti il suono smette di essere registrato.'],
       ['Senza occhiali durante il selfie', 'Togli gli occhiali prima di ogni selfie: le lenti cambiano la luce che la fotocamera misura sulla pelle. Tieni il telefono davanti al viso, all\'altezza degli occhi.', 'Nessuna foto viene salvata: dal selfie si ricavano solo numeri sulla luce.'],
-      ['Ogni 10 minuti: sondaggio e selfie', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti: rispondi al sondaggio e scatta il selfie, che serve a misurare la luce sul tuo volto. Puoi anche segnalare come ti senti in qualsiasi momento con il pulsante che lampeggia nella Home. A fine lezione invia i dati al ricercatore dal menu.']
+      ['Le conversazioni non vengono registrate', 'COMFY usa il microfono solo per misurare quanto è forte il suono. Ogni secondo calcola un numero in decibel e scarta subito l\'audio: nessuna voce viene salvata, ascoltata o inviata.', 'Nel file per il ricercatore ci sono solo numeri, per esempio 46 dB.'],
+      ['Ogni 10 minuti: sondaggio e selfie', 'Ogni 10 minuti COMFY suona e ti chiede una misura di circa 2 minuti: rispondi al sondaggio e scatta il selfie, che serve a misurare la luce sul tuo volto. Puoi anche segnalare come ti senti in qualsiasi momento con il pulsante color mattone nella Home. A fine lezione invia i dati al ricercatore dal menu.']
     ],
     b_sound_now: 'dB · suono ora', b_not_active: 'Suono non attivo', b_paused: 'Suono in pausa', b_rec: p => `${p} % registrato`,
     b_next: (h, m) => `Prossima misura ${h} · tra ${m} min`, b_due: h => `Misura da fare · dalle ${h}`, b_snoozed: h => `Misura rimandata · alle ${h}`,
@@ -154,7 +155,7 @@ export const STR = {
     det_note: 'Livelli sonori in dB non calibrati: servono solo a confrontare momenti diversi sullo stesso telefono.',
     // ---- v0.6
     save_err_t: 'COMFY non riesce a salvare i dati sul telefono.', save_err_b: 'Non chiudere COMFY: libera spazio sull\'iPhone e tocca Riprova, poi invia subito i dati al ricercatore.', save_retry: 'Riprova',
-    live_noface: 'Inquadra il volto dentro l\'ovale', live_ready: 'Pronto: tocca Scatta',
+    live_noface: 'Inquadra il volto dentro l\'ovale', live_ready: 'Pronto: tocca il pulsante rotondo',
     glasses_detected_live: 'Occhiali rilevati · toglili per continuare', glasses_possible_live: 'Forse indossi occhiali · toglili per continuare',
     send_files_note: 'File allegati: dati per l\'analisi, copia completa e storico del suono al secondo. Il nome dei file contiene data e ora dell\'invio.',
     send_preparing: 'Preparo i file…', export_err: 'Non è stato possibile preparare i file.', send_text_sound: n => `· ${n} (storico del suono al secondo)`,
@@ -178,14 +179,14 @@ export const STR = {
       home_look: ['Tema e lingua', 'Con la luna passi al tema scuro, con il sole torni a quello chiaro. Con IT / EN cambi lingua.'],
       home_menu: ['Menu', 'Qui trovi l\'invio dei dati al ricercatore, il profilo, le istruzioni e questo tutorial.'],
       pre: ['Prima della misura', 'Rispondi se hai cambiato abbigliamento e, più sotto, se hai cambiato posizione nell\'aula.'],
-      cam: ['Il selfie', 'Tieni il telefono all\'altezza degli occhi e inquadra il volto nell\'ovale. Quando la barra in basso diventa verde tocca «Scatta». Se porti gli occhiali, toglili.'],
+      cam: ['Il selfie', 'Tieni il telefono all\'altezza degli occhi e inquadra il volto nell\'ovale. Quando la barra in basso diventa verde tocca il pulsante rotondo. Se porti gli occhiali, toglili.'],
       gsv: ['Abbagliamento', 'Trascina il cursore fino al punto che descrive quanto ti dà fastidio la luce in questo momento.'],
       tsv: ['Sensazione termica', 'Sposta il cursore da freddo a caldo, poi rispondi alle due domande sul comfort termico. Le domande sul suono sono nella pagina successiva.'],
       res_data: ['I tuoi dati', 'Tocca qui per vedere i dati di questa misura.'],
       res_home: ['Torna alla Home', 'Ti riporta alla schermata principale, dove vedi quanto manca alla prossima misura.'],
       res_wait: ['Lascia il telefono sul banco', 'Non bloccare il telefono e non cambiare app: nella Home lo schermo diventa nero da solo e COMFY continua a registrare il suono. Tra 10 minuti suona per la misura successiva.']
     },
-    menu_lang: 'Lingua', version: 'Versione'
+    det_export: 'Esporta CSV', ill_3d: 'Altezza degli occhi · circa 30 cm', menu_lang: 'Lingua', version: 'Versione'
   },
   en: {
     next: 'Next', back: 'Back', save: 'Save', retry: 'Try again', close: 'Close',
@@ -252,7 +253,7 @@ export const STR = {
     test_body: 'If the researcher gives you a new reference value, enter it: COMFY compares it with the illuminance computed from the selfie.',
     test_saved: 'Test measurement saved',
     // ---- block 2
-    cam_title: 'The selfie', cam_body: 'Hold the phone in front of your face, at eye level, about 30 cm away, with your face inside the oval. Then tap Shoot.',
+    cam_title: 'The selfie', cam_body: 'Hold the phone in front of your face, at eye level, about 30 cm away, with your face inside the oval. Then tap the round button.',
     cam_shoot: 'Shoot', cam_starting: 'Starting the camera…', cam_denied: 'COMFY cannot use the camera. Allow access when Safari asks, or use the Camera app.',
     cam_fallback: 'Use the Camera app', cam_fallback_s: 'If shooting here does not work: take the selfie with the Camera app and choose it from the library.',
     cam_retake: 'Retake the selfie',
@@ -309,7 +310,8 @@ export const STR = {
       ['What COMFY is', 'COMFY is a research app on comfort in study spaces. During the lecture it records the sound environment and, with a short selfie, measures the light reaching your face. Every 10 minutes it asks how you feel: by comparing measurements and answers, the study explores the relations between light, sound and your perception of comfort.'],
       ['Phone on the desk, black screen', 'Start monitoring and lay the phone on the desk, screen up and always in the same spot. COMFY dims the screen by itself. Do not lock the phone or switch apps: otherwise sound stops being recorded.'],
       ['No glasses during the selfie', 'Take off your glasses before each selfie: lenses change the light the camera measures on your skin. Hold the phone in front of your face, at eye level.', 'No photo is saved: only light values are extracted from the selfie.'],
-      ['Every 10 minutes: survey and selfie', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes: answer the survey and take the selfie, which measures the light on your face. You can also report how you feel at any time with the blinking button on Home. At the end of the lecture send the data to the researcher from the menu.']
+      ['Conversations are not recorded', 'COMFY uses the microphone only to measure how loud the sound is. Every second it computes a number in decibels and discards the audio straight away: no voice is saved, listened to or sent.', 'The file for the researcher contains only numbers, for example 46 dB.'],
+      ['Every 10 minutes: survey and selfie', 'Every 10 minutes COMFY rings and asks for a measurement of about 2 minutes: answer the survey and take the selfie, which measures the light on your face. You can also report how you feel at any time with the brick-coloured button on Home. At the end of the lecture send the data to the researcher from the menu.']
     ],
     b_sound_now: 'dB · sound now', b_not_active: 'Sound not active', b_paused: 'Sound paused', b_rec: p => `${p} % recorded`,
     b_next: (h, m) => `Next measurement ${h} · in ${m} min`, b_due: h => `Measurement due · since ${h}`, b_snoozed: h => `Measurement postponed · at ${h}`,
@@ -331,7 +333,7 @@ export const STR = {
     det_note: 'Sound levels in uncalibrated dB: only for comparing moments on the same phone.',
     // ---- v0.6
     save_err_t: 'COMFY cannot save data on the phone.', save_err_b: 'Do not close COMFY: free up space on the iPhone and tap Retry, then send the data to the researcher right away.', save_retry: 'Retry',
-    live_noface: 'Frame your face inside the oval', live_ready: 'Ready: tap Shoot',
+    live_noface: 'Frame your face inside the oval', live_ready: 'Ready: tap the round button',
     glasses_detected_live: 'Glasses detected · take them off to continue', glasses_possible_live: 'You may be wearing glasses · take them off to continue',
     send_files_note: 'Attached files: analysis data, complete copy and per-second sound history. File names contain the date and time of sending.',
     send_preparing: 'Preparing the files…', export_err: 'The files could not be prepared.', send_text_sound: n => `· ${n} (per-second sound history)`,
@@ -355,13 +357,13 @@ export const STR = {
       home_look: ['Theme and language', 'The moon switches to the dark theme, the sun back to the light one. IT / EN changes the language.'],
       home_menu: ['Menu', 'Here you find sending data to the researcher, your profile, the instructions and this tutorial.'],
       pre: ['Before the measurement', 'Answer whether you changed clothing and, further down, whether you changed position in the room.'],
-      cam: ['The selfie', 'Hold the phone at eye level and frame your face in the oval. When the bar at the bottom turns green tap «Take photo». If you wear glasses, take them off.'],
+      cam: ['The selfie', 'Hold the phone at eye level and frame your face in the oval. When the bar at the bottom turns green tap the round button. If you wear glasses, take them off.'],
       gsv: ['Glare', 'Drag the slider to the point that describes how much the light bothers you right now.'],
       tsv: ['Thermal sensation', 'Move the slider from cold to hot, then answer the two thermal comfort questions. The sound questions are on the next page.'],
       res_data: ['Your data', 'Tap here to see the data of this measurement.'],
       res_home: ['Back to home', 'Takes you back to the main screen, where you see how long until the next measurement.'],
       res_wait: ['Leave the phone on the desk', 'Do not lock the phone or switch apps: on the Home screen the screen turns black by itself and COMFY keeps recording sound. In 10 minutes it rings for the next measurement.']
     },
-    menu_lang: 'Language', version: 'Version'
+    det_export: 'Export CSV', ill_3d: 'Eye level · about 30 cm', menu_lang: 'Language', version: 'Version'
   }
 };

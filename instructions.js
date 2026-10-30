@@ -1,7 +1,7 @@
 // COMFY web (iPhone) – illustrazioni animate delle istruzioni.
 // Porting di InstructionMotionView.kt (Android 2.19.26): tratto bianco su terracotta, riempimenti bianchi trasparenti,
-// frecce color pesca, badge di conferma. Scene: 0 cos'e' COMFY · 1 telefono sul banco a schermo nero · 2 occhiali tolti · 3 sondaggio e selfie.
-const PERIOD = [4200, 4800, 2600, 5200];
+// frecce color pesca, badge di conferma. Scene: 0 cos'e' COMFY · 1 telefono sul banco a schermo nero · 2 occhiali tolti · 3 privacy del microfono · 4 sondaggio e selfie.
+const PERIOD = [4200, 4800, 2600, 5600, 5200];
 const WHITE = '#FFFFFF', ACCENT = '#FFD8CC', BRAND = '#A4472B';
 const ease = x => { const v = Math.max(0, Math.min(1, x)); return v * v * (3 - 2 * v); };
 const phase = (t, a, b) => ease((t - a) / (b - a));
@@ -126,7 +126,49 @@ function drawSurvey(g, w, h, t) {
   }
 }
 
-const SCENES = [drawActivation, drawTable, drawGlasses, drawSurvey];
+// ---- 3 · le voci arrivano al telefono e ne esce solo un numero in decibel; registrazione barrata
+const WORDS = ['ciao', 'esame', 'ok', 'domani', 'lezione', 'sì'];
+function person(g, cx, cy, s) {
+  circle(g, cx, cy - s * 0.55, s * 0.32); fill(g, WHITE, 0.16); stroke(g, 2.2);
+  g.beginPath(); g.moveTo(cx - s * 0.62, cy + s * 0.75); g.quadraticCurveTo(cx - s * 0.6, cy - s * 0.05, cx, cy - s * 0.08); g.quadraticCurveTo(cx + s * 0.6, cy - s * 0.05, cx + s * 0.62, cy + s * 0.75);
+  fill(g, WHITE, 0.16); stroke(g, 2.2);
+}
+function bubble(g, x, y, txt, a) {
+  if (a <= 0.01) return;
+  g.font = '600 12px -apple-system,system-ui,sans-serif';
+  const w = g.measureText(txt).width + 16, hh = 20;
+  rr(g, x - w / 2, y - hh / 2, w, hh, 9); fill(g, WHITE, 0.92 * a);
+  g.beginPath(); g.moveTo(x - 5, y + hh / 2 - 1); g.lineTo(x - 9, y + hh / 2 + 7); g.lineTo(x + 2, y + hh / 2 - 1); fill(g, WHITE, 0.92 * a);
+  g.globalAlpha = a; g.fillStyle = BRAND; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x, y + 0.5); g.globalAlpha = 1;
+}
+function drawPrivacy(g, w, h, t) {
+  const r = phoneRect(w, h, 0, 0.5); phone(g, r, 34 / 255);
+  const s = screenRect(r), pcx = (r.l + r.r) / 2, pcy = (s.t + s.b) / 2;
+  const ps = h * 0.30, ly = h * 0.62;
+  person(g, w * 0.13, ly, ps); person(g, w * 0.87, ly, ps);
+  // parole che volano verso il telefono e svaniscono entrandoci
+  for (let k = 0; k < 4; k++) {
+    const q = (t * 1.6 + k * 0.25) % 1, left = k % 2 === 0;
+    const sx = left ? w * 0.20 : w * 0.80, sy = ly - ps * 1.05, ex = pcx, ey = pcy - 6;
+    const x = sx + (ex - sx) * q, y = sy + (ey - sy) * q - h * 0.10 * Math.sin(Math.PI * q);
+    const a = q < 0.15 ? q / 0.15 : q > 0.72 ? Math.max(0, (1 - q) / 0.28) : 1;
+    bubble(g, x, y, WORDS[(k + Math.floor(t * 1.6 + k * 0.25)) % WORDS.length], a);
+  }
+  // nel telefono: solo il livello in dB
+  const db = Math.round(45 + 3 * Math.sin(t * Math.PI * 4));
+  g.fillStyle = WHITE; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.font = '300 26px -apple-system,system-ui,sans-serif'; g.fillText(String(db), pcx - 6, pcy - 4);
+  g.font = '600 10px -apple-system,system-ui,sans-serif'; g.fillText('dB', pcx + 18, pcy - 4);
+  const n = 7, bw = (s.r - s.l - 16) / n;
+  for (let i = 0; i < n; i++) { const hh = 4 + 12 * Math.abs(Math.sin(t * Math.PI * 6 + i * 0.9)); rr(g, s.l + 8 + i * bw + bw * 0.2, pcy + 12 - hh / 2, bw * 0.6, hh, 2); fill(g, ACCENT, 0.9); }
+  // registrazione barrata
+  const rx = pcx, ry = s.b - 14;
+  circle(g, rx, ry, 7.5); stroke(g, 2, ACCENT); circle(g, rx, ry, 3.2); fill(g, ACCENT);
+  line(g, rx - 10, ry + 10, rx + 10, ry - 10, 2.4, ACCENT);
+  checkBadge(g, r.r + 22, r.t + 18, phase(t, 0.15, 0.25));
+}
+
+const SCENES = [drawActivation, drawTable, drawGlasses, drawPrivacy, drawSurvey];
 
 /** Avvia l'animazione della scena `mode` nel canvas; restituisce una funzione per fermarla. */
 export function animate(canvas, mode) {
