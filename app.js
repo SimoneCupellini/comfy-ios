@@ -9,7 +9,7 @@ const { createDiagram } = await import('./diagram.js' + VQ);
 const INS = await import('./instructions.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.4.1';
+export const APP_VERSION = 'web-ios-0.6.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -21,7 +21,17 @@ const DEV = params.has('dev');
 // ------------------------------------------------------------------ dati (solo in aggiunta: nulla viene mai cancellato)
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
 let S = load();
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { console.warn('storage', e); } }
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); hideSaveError(); return true; }
+  catch (e) { console.error('storage', e); showSaveError(e); return false; }
+}
+function showSaveError(e) {
+  let b = document.getElementById('saveerr');
+  if (!b) { b = document.createElement('div'); b.id = 'saveerr'; b.setAttribute('role', 'alert'); document.body.appendChild(b); }
+  b.innerHTML = `<b>${STR[(S && S.lang) || 'it'].save_err_t}</b><span>${STR[(S && S.lang) || 'it'].save_err_b}</span><button type="button" id="saveretry">${STR[(S && S.lang) || 'it'].save_retry}</button>`;
+  b.querySelector('#saveretry').onclick = () => { if (save()) b.remove(); };
+}
+function hideSaveError() { const b = document.getElementById('saveerr'); if (b) b.remove(); }
 const shortId = p => `${p}-${(crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(16).slice(2) + '00000000').slice(0, 8).toUpperCase()}`;
 const uuid = () => crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
 if (!S.participant_id) { S.participant_id = shortId('P'); S.session_id = shortId('S'); S.created = Date.now(); }
@@ -43,6 +53,7 @@ const GSV_CODE = ['imperceptible', 'noticeable', 'disturbing', 'intolerable'];
 const TSV_CODE = ['cold', 'cool', 'slightly_cool', 'neutral', 'slightly_warm', 'warm', 'hot'];
 const AC_CODE = ['very_comfortable', 'comfortable', 'slightly_comfortable', 'neutral', 'slightly_uncomfortable', 'uncomfortable', 'very_uncomfortable'];
 const sound = new SoundEngine();
+sound.onError = e => showSaveError(e);
 sound.restore();
 
 // ------------------------------------------------------------------ pianta dell'aula
@@ -51,19 +62,29 @@ async function room() { if (!ROOM) ROOM = await (await fetch('room.json', { cach
 function zoneInfo(r, i, j) {
   const rows = r.rows_range[i], seats = r.seat_groups_range[j];
   let dist = null;
-  if (seats[1] != null) { const mid = (seats[0] + seats[1]) / 2; dist = Math.round((r.first_seat_from_window_m + (mid - 1) * r.seat_width_m) * 10) / 10; }
+  const aisle = r.aisle_after_group != null && j > r.aisle_after_group ? (r.aisle_width_m || 0) : 0;
+  if (seats[1] != null) { const mid = (seats[0] + seats[1]) / 2; dist = Math.round((r.first_seat_from_window_m + (mid - 1) * r.seat_width_m + aisle) * 10) / 10; }
   return { zone: `r${rows[0]}-${rows[1]}_s${seats[0]}-${seats[1] ?? 'plus'}`, rows: r.rows[i], seats: r.seat_groups[j], row_min: rows[0], row_max: rows[1], seat_min: seats[0], seat_max: seats[1], dist_window_m: dist };
 }
 function roomSvg(r, sel) {
-  const W = 300, H = 360, x0 = 30, y0 = 40, nB = r.rows.length, nC = r.seat_groups.length;
-  const top = y0 + 26, bottom = H - 34, band = (bottom - top) / nB, colW = (W - x0 - 58) / nC, rad = Math.min(band, colW) / 2 - 4;
+  const W = 300, H = 360, x0 = 30, y0 = 40, nB = r.rows.length, nC = r.seat_groups.length, R = W - 8;
+  const top = y0 + 26, bottom = H - 34, band = (bottom - top) / nB;
+  const hasAisle = r.aisle_after_group != null, aisleW = hasAisle ? 22 : 0;
+  const colW = (W - x0 - 58 - aisleW) / nC, rad = Math.min(band, colW) / 2 - 4;
+  const cxOf = j => x0 + 14 + colW * (j + 0.5) + (hasAisle && j > r.aisle_after_group ? aisleW : 0);
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="group" aria-label="${esc(t('seat_title'))}">`;
   s += `<rect x="${x0}" y="${y0 - 28}" width="${W - x0 - 8}" height="${H - y0 + 20}" fill="var(--bgapp)" stroke="var(--ink)" stroke-width="1.5"/>`;
-  s += `<rect x="${x0 + (W - x0 - 8) / 2 - 40}" y="${y0 - 22}" width="80" height="16" rx="3" fill="#DCE6F1" stroke="#1F4E79"/><text x="${x0 + (W - x0 - 8) / 2}" y="${y0 - 10.5}" font-size="9.5" text-anchor="middle" fill="#1F4E79">${esc(t('seat_cattedra'))}</text>`;
+  if (hasAisle) {
+    const ax = x0 + 14 + colW * (r.aisle_after_group + 1);
+    s += `<rect x="${ax}" y="${top - 6}" width="${aisleW}" height="${bottom - top + 12}" fill="#EFE7E1"/>`;
+    s += `<text x="${ax + aisleW / 2}" y="${(top + bottom) / 2}" font-size="8" fill="var(--mute)" text-anchor="middle" transform="rotate(-90 ${ax + aisleW / 2} ${(top + bottom) / 2})">${esc(t('seat_aisle'))}</text>`;
+  }
+  const mid = x0 + (W - x0 - 8) / 2;
+  s += `<rect x="${mid - 40}" y="${y0 - 22}" width="80" height="16" rx="3" fill="#DCE6F1" stroke="#1F4E79"/><text x="${mid}" y="${y0 - 10.5}" font-size="9.5" text-anchor="middle" fill="#1F4E79">${esc(t('seat_cattedra'))}</text>`;
   const wl = (H - y0 + 4) / 5;
   for (let k = 0; k < 5; k++) { const a = y0 - 20 + k * wl, b = a + wl - 12; s += `<line x1="${x0}" y1="${a}" x2="${x0}" y2="${b}" stroke="#5DA9E9" stroke-width="5"/>`; }
   s += `<text x="${x0 - 9}" y="${H / 2 + 22}" font-size="9" fill="#2a78d6" transform="rotate(-90 ${x0 - 9} ${H / 2 + 22})">${esc(t('seat_windows'))}</text>`;
-  const R = W - 8, d = 20;
+  const d = 20;
   s += `<line x1="${R}" y1="${y0 - 24}" x2="${R}" y2="${y0 - 24 + d}" stroke="var(--bgapp)" stroke-width="4"/><path d="M${R} ${y0 - 24} A${d} ${d} 0 0 0 ${R - d} ${y0 - 24 + d}" fill="none" stroke="var(--mute)" stroke-dasharray="2 2"/>`;
   s += `<line x1="${R}" y1="${H - 12 - d}" x2="${R}" y2="${H - 12}" stroke="var(--bgapp)" stroke-width="4"/><path d="M${R} ${H - 12} A${d} ${d} 0 0 1 ${R - d} ${H - 12 - d}" fill="none" stroke="var(--mute)" stroke-dasharray="2 2"/>`;
   s += `<text x="${R - 6}" y="${top - 8}" font-size="8.5" text-anchor="end" fill="var(--mute)">${esc(t('seat_rows'))}</text>`;
@@ -71,13 +92,13 @@ function roomSvg(r, sel) {
     const cy = top + band * (i + 0.5);
     s += `<text x="${R - 6}" y="${cy + 3}" font-size="8.5" text-anchor="end" fill="var(--mute)">${r.rows[i]}</text>`;
     for (let j = 0; j < nC; j++) {
-      const cx = x0 + 14 + colW * (j + 0.5), on = sel && sel.i === i && sel.j === j;
+      const cx = cxOf(j), on = sel && sel.i === i && sel.j === j;
       s += `<g class="zone" data-i="${i}" data-j="${j}" role="button" tabindex="0" aria-label="${esc(t('seat_chosen', r.rows[i], r.seat_groups[j]))}">
         <circle cx="${cx}" cy="${cy}" r="${rad}" fill="${on ? 'var(--brand)' : 'var(--soft)'}" stroke="${on ? 'var(--brand)' : '#E3C9BC'}" stroke-width="1.6"/>
         ${on ? `<path d="M${cx - 7} ${cy} l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` : ''}</g>`;
     }
   }
-  for (let j = 0; j < nC; j++) s += `<text x="${x0 + 14 + colW * (j + 0.5)}" y="${bottom + 16}" font-size="8.5" text-anchor="middle" fill="var(--mute)">${esc(t('seat_seats'))} ${r.seat_groups[j]}</text>`;
+  for (let j = 0; j < nC; j++) s += `<text x="${cxOf(j)}" y="${bottom + 16}" font-size="8.5" text-anchor="middle" fill="var(--mute)">${esc(t('seat_seats'))} ${r.seat_groups[j]}</text>`;
   return s + '</svg>';
 }
 
@@ -91,6 +112,7 @@ const IC = {
   lib: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>`,
   sun: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>`,
   mic: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
+  eye: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
   user: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>`,
   send: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4472B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>`,
   ok: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>`
@@ -108,7 +130,7 @@ function route() {
   if (!S.profile || !S.profile.age) return showProfile();
   if (!S.profile.seat) return showSeat();
   if (!S.baselines.length) return showCheckin();
-  if (!S.calibrations.length) return showCalRef();
+  if (!S.calibrations.length) return showCalGuide(false);
   if (M) return;
   return showHome();
 }
@@ -151,45 +173,56 @@ function showInstructions(i, fromMenu = false) {
   if (i > 0) $('#back').onclick = () => showInstructions(i - 1, fromMenu);
 }
 
-function showProfile() {
+function showProfile(onDone = null) {
   const p = S.profile || {};
   const ages = Array.from({ length: 63 }, (_, i) => i + 16).map(a => `<option value="${a}" ${p.age == a ? 'selected' : ''}>${a} ${t('age_unit')}</option>`).join('');
   const seg = (name, opts) => `<div class="seg" role="radiogroup">${opts.map(([v, l, s]) => `<button type="button" role="radio" aria-checked="${p[name] === v}" class="${p[name] === v ? 'on' : ''}" data-f="${name}" data-v="${v}">${l}${s ? `<small>${s}</small>` : ''}</button>`).join('')}</div>`;
   screen(`<main class="body">${topbar()}
-    <div class="step">${t('step', 1)}</div><h1>${t('prof_title')}</h1>
+    <div class="step">${onDone ? t('menu_profile').toUpperCase() : t('step', 1)}</div><h1>${t('prof_title')}</h1>
     <label class="lab" for="age">${t('age')}</label>
     <select id="age" class="field"><option value="">–</option>${ages}</select>
     <div class="lab">${t('sex')}</div>${seg('sex', [['female', t('sex_f')], ['male', t('sex_m')], ['other', t('sex_o')]])}
     <div class="lab">${t('clo')}</div>${seg('clothing', [['light', t('clo_l'), t('clo_ls')], ['medium', t('clo_m'), t('clo_ms')], ['heavy', t('clo_h'), t('clo_hs')]])}
-    <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button></main>`);
+    <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${onDone ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
+  if (onDone) $('#back').onclick = () => route();
   app.querySelectorAll('.seg button').forEach(b => b.onclick = () => { p[b.dataset.f] = b.dataset.v; b.parentElement.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); });
   $('#age').onchange = e => p.age = +e.target.value || null;
   $('#go').onclick = () => {
     if (!p.age || !p.sex || !p.clothing) { $('#msg').innerHTML = errBox(t('prof_missing')); return; }
-    S.profile = { ...(S.profile || {}), age: p.age, sex: p.sex, clothing: p.clothing, saved: Date.now() }; save(); route();
+    S.profile = { ...(S.profile || {}), age: p.age, sex: p.sex, clothing: p.clothing, saved: Date.now() };
+    if (onDone) logProfileChange('profile'); save(); onDone ? onDone() : route();
   };
 }
 
-async function showSeat() {
+async function showSeat(opts = {}) {
   const r = await room();
-  let sel = S.profile.seatSel || null;
+  let sel = opts.fresh ? null : (S.profile.seatSel || null);
   const draw = () => {
     const z = sel ? zoneInfo(r, sel.i, sel.j) : null;
     screen(`<main class="body">${topbar()}
-      <div class="step">${t('step', 2)}</div><h1>${t('seat_title')}</h1><p class="t">${t('seat_body')}</p>
+      <div class="step">${opts.eyebrow || t('step', 2)}</div><h1>${opts.title || t('seat_title')}</h1><p class="t">${t('seat_body')}</p>
       <div class="map">${roomSvg(r, sel)}</div>
       <div class="card chosen">${z ? `<div class="flex"><span class="chip o">✓</span><div class="s"><b>${t('seat_chosen', z.rows, z.seats)}</b>${t('seat_dist', z.dist_window_m != null ? fmt(z.dist_window_m, 1) : null)}</div></div>` : `<div class="s">${t('seat_missing')}</div>`}</div>
-      <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button></main>`);
+      <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${opts.onBack ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
+    if (opts.onBack) $('#back').onclick = opts.onBack;
     app.querySelectorAll('.zone').forEach(g => {
       const pick = () => { sel = { i: +g.dataset.i, j: +g.dataset.j }; draw(); };
       g.addEventListener('click', pick); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') pick(); });
     });
     $('#go').onclick = () => {
       if (!sel) { $('#msg').innerHTML = errBox(t('seat_missing')); return; }
-      S.profile.seatSel = sel; S.profile.seat = { ...zoneInfo(r, sel.i, sel.j), room_id: r.id }; save(); route();
+      const prev = S.profile.seat ? S.profile.seat.zone : '';
+      S.profile.seatSel = sel; S.profile.seat = { ...zoneInfo(r, sel.i, sel.j), room_id: r.id };
+      if (opts.log && prev !== S.profile.seat.zone) logProfileChange('seat', prev);
+      save(); opts.onDone ? opts.onDone(prev) : route();
     };
   };
   draw();
+}
+
+function logProfileChange(what, prev = '') {
+  if (!Array.isArray(S.profile_changes)) S.profile_changes = [];
+  S.profile_changes.push({ at: isoLocal(), what, previous: prev, age: S.profile.age, sex: S.profile.sex, clothing: S.profile.clothing, seat: S.profile.seat ? S.profile.seat.zone : '' });
 }
 
 function gsvSlider(id, value) {
@@ -219,8 +252,9 @@ function showCheckin() {
 }
 
 // ------------------------------------------------------------------ selfie: fotocamera dentro COMFY, con ripiego sull'app Fotocamera
-let camStream = null;
-function stopCam() { L.stopCamera(camStream); camStream = null; }
+let camStream = null, liveTimer = null;
+function stopLive() { clearTimeout(liveTimer); liveTimer = null; }
+function stopCam() { stopLive(); L.stopCamera(camStream); camStream = null; }
 
 function errorText(e) {
   if (e instanceof LightError) {
@@ -282,6 +316,7 @@ function showCamera(opts) {
     $('#msg').innerHTML = errBox(errorText(err));
     const pl = $('#pickl'); if (pl) pl.hidden = false;
     const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
+    if (camStream) startLive();
   }
   async function run(file, source) {
     const slow = busy();
@@ -289,25 +324,27 @@ function showCamera(opts) {
       const r = await opts.analyze(file);
       clearTimeout(slow);
       if (r.exif.model) S.device = `${r.exif.make} ${r.exif.model}`.trim();
-      r.glassesOverride = false;
+      r.glassesOverride = liveOverride;
       const g = r.glasses || { status: 'unknown' };
-      if (g.status === 'detected' || g.status === 'possible') {
+      if (!liveOverride && (g.status === 'detected' || g.status === 'possible')) {
         $('#msg').innerHTML = `<div class="glass warn">${GLASSES_ICON}<div>${t(g.status === 'detected' ? 'glasses_detected' : 'glasses_possible')}<small>${t('glasses_exp')}</small></div></div>
           <button class="btn out" id="gover" type="button">${t('glasses_override')}</button>`;
         const sh = $('#shoot'); if (sh) { sh.disabled = false; sh.textContent = t('cam_retake'); }
+        if (camStream) startLive();
         $('#gover').onclick = () => { r.glassesOverride = true; stopCam(); opts.onDone(r, source); };
         return;
       }
       stopCam(); opts.onDone(r, source);
     } catch (err) { clearTimeout(slow); failed(err, source); }
   }
+  let liveOverride = false, liveGlasses = false;
   function cameraStage() {
-    screen(`${head}<div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="oval" aria-hidden="true"></div></div>
-      <p class="t small">${t('cam_body')}</p>${glassNote}<div id="msg"></div><div class="spacer"></div>
+    screen(`${head}<div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="oval" id="oval" aria-hidden="true"></div><div class="livebar" id="live" role="status" aria-live="polite"></div></div>
+      <p class="t small">${t('cam_body')}</p><div id="gwarn"></div><div id="msg"></div><div class="spacer"></div>
       <button class="btn" id="shoot" type="button" disabled>${t('cam_shoot')}</button>${pickLabel(true, true)}${back}</main>`);
     bindCommon();
     $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('cam_starting')}</div>`;
-    L.startCamera($('#vid')).then(st => { camStream = st; $('#msg').innerHTML = ''; $('#shoot').disabled = false; })
+    L.startCamera($('#vid')).then(st => { camStream = st; $('#msg').innerHTML = ''; $('#shoot').disabled = false; startLive(); })
       .catch(err => { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; });
     $('#shoot').onclick = async () => {
       if (!camStream) return;
@@ -315,8 +352,30 @@ function showCamera(opts) {
       let file;
       try { file = await L.takePhoto(camStream); }
       catch (err) { console.error(err); $('#msg').innerHTML = errBox(t('cam_denied')); $('#pickl').hidden = false; $('#shoot').disabled = false; return; }
-      run(file, 'in_app_takephoto');
+      stopLive(); run(file, 'in_app_takephoto');
     };
+  }
+  // controllo dal vivo ogni ~0,7 s: volto nell'ovale e occhiali (come l'app Android: «toglili per continuare»)
+  function startLive() {
+    stopLive();
+    const tick = async () => {
+      if (!camStream || !$('#vid')) return stopLive();
+      try {
+        const q = await L.liveCheck($('#vid'));
+        const live = $('#live'), ov = $('#oval'), sh = $('#shoot'), gw = $('#gwarn');
+        if (!live) return stopLive();
+        const g = q.glasses.status;
+        liveGlasses = q.face && (g === 'detected' || g === 'possible') && !liveOverride;
+        if (!q.face) { live.className = 'livebar'; live.textContent = t('live_noface'); ov.classList.remove('ok', 'bad'); }
+        else if (liveGlasses) { live.className = 'livebar bad'; live.textContent = t(g === 'detected' ? 'glasses_detected_live' : 'glasses_possible_live'); ov.classList.add('bad'); ov.classList.remove('ok'); }
+        else { live.className = 'livebar ok'; live.textContent = t('live_ready'); ov.classList.add('ok'); ov.classList.remove('bad'); }
+        if (sh && !sh.dataset.busy) sh.disabled = liveGlasses;
+        if (gw) gw.innerHTML = liveGlasses ? `<div class="glass warn">${GLASSES_ICON}<div>${t(g === 'detected' ? 'glasses_detected_live' : 'glasses_possible_live')}<small>${t('glasses_exp')}</small></div></div><button class="btn out" id="lover" type="button">${t('glasses_override')}</button>` : '';
+        const lo = $('#lover'); if (lo) lo.onclick = () => { liveOverride = true; liveGlasses = false; gw.innerHTML = ''; if (sh) sh.disabled = false; };
+      } catch (e) { console.warn('live', e); }
+      liveTimer = setTimeout(tick, 700);
+    };
+    liveTimer = setTimeout(tick, 400);
   }
   if (inApp) {
     screen(`${head}${selfieIllustration()}<p class="t small">${t('cam_body')}</p>${glassNote}<div id="msg"></div><div class="spacer"></div>
@@ -332,15 +391,43 @@ function showCamera(opts) {
 }
 
 // ------------------------------------------------------------------ calibrazione
-let pendingRef = null;
+let pendingRef = null, stopGuide = null;
+const CAL_CLIPS = [1, 2, 3, 4].map(n => `video/cal3d_phone_step${n}.mp4`);
+/** Animazione 3D della calibrazione con il telefono taratore: gli stessi 4 video dell'app Android (cal3d_phone_stepN). */
+function showCalGuide(recal = false) {
+  let step = 0, locked = false;
+  const steps = STR[lang()].cal3d;
+  app.innerHTML = `<main class="calguide">
+    <div class="cgvideo"><video id="cgv" playsinline muted autoplay preload="auto"></video>
+      <button class="cgback" id="cgx" type="button" aria-label="${t('back')}">‹</button></div>
+    <div class="cgsheet"><div class="step">${t('cal3d_eyebrow')}</div><div class="cgcount" id="cgc"></div>
+      <h1 id="cgt"></h1><p class="t" id="cgb"></p>
+      <div class="cgnav"><button class="cgarrow" id="cgp" type="button" aria-label="${t('cal3d_prev')}">‹</button><div class="insdots dark" id="cgd"></div><button class="cgarrow" id="cgn" type="button" aria-label="${t('cal3d_next')}">›</button></div>
+      <button class="btn" id="go" type="button">${t('cal3d_continue')}</button><button class="linkbtn" id="rep" type="button">${t('cal3d_replay')}</button></div></main>`;
+  window.scrollTo(0, 0);
+  const v = $('#cgv');
+  const render = () => {
+    $('#cgc').textContent = t('cal3d_counter', step + 1, 4); $('#cgt').textContent = steps[step][0]; $('#cgb').textContent = steps[step][1];
+    $('#cgd').innerHTML = [0, 1, 2, 3].map(k => `<span class="${k === step ? 'on' : ''}"></span>`).join('');
+    $('#cgp').disabled = step === 0; $('#cgn').disabled = step === 3;
+  };
+  const play = () => { v.src = CAL_CLIPS[step]; v.play().catch(() => {}); render(); };
+  v.onended = () => { if (locked) { v.currentTime = 0; v.play().catch(() => {}); } else { step = (step + 1) % 4; play(); } };
+  $('#cgp').onclick = () => { if (step > 0) { step--; locked = true; play(); } };
+  $('#cgn').onclick = () => { if (step < 3) { step++; locked = true; play(); } };
+  $('#rep').onclick = () => { step = 0; locked = false; play(); };
+  $('#go').onclick = () => { v.pause(); showCalRef(recal); };
+  $('#cgx').onclick = () => { v.pause(); recal ? route() : showCheckin(); };
+  play();
+}
 function showCalRef(recal = false) {
   screen(`<main class="body">${topbar()}
     <div class="step">${recal ? t('home_recal').toUpperCase() : t('cal_eyebrow')}</div><h1>${t('cal_ref_title')}</h1><p class="t">${t('cal_ref_body')}</p>
     <label class="lab" for="ref">${t('cal_ref_label')}</label>
     <input id="ref" class="field big-input" type="number" inputmode="decimal" min="5" max="5000" step="1" placeholder="104" value="${pendingRef ?? ''}">
     <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>
-    ${recal ? `<button class="btn out" id="back" type="button">${t('back')}</button>` : ''}</main>`);
-  if (recal) $('#back').onclick = () => route();
+    <button class="btn out" id="back" type="button">${t('back')}</button></main>`);
+  $('#back').onclick = () => showCalGuide(recal);
   $('#go').onclick = () => {
     const v = parseFloat(String($('#ref').value).replace(',', '.'));
     if (!(v >= 5 && v <= 5000)) { $('#msg').innerHTML = errBox(t('cal_ref_missing')); return; }
@@ -495,7 +582,7 @@ function skipPending() {
 // ------------------------------------------------------------------ misura: abbigliamento → selfie → abbagliamento → (diagramma) → termico → acustico
 let M = null;
 function startMeasurement(trigger, reminderMs) {
-  if (!activeK()) return showCalRef(true);
+  if (!activeK()) return showCalGuide(true);
   const now = Date.now();
   inFlow = true; hideBlack(); clearTimeout(idleTimer);
   M = { id: uuid(), trigger, anchorMs: trigger === 'scheduled' && reminderMs ? Math.min(reminderMs, now) : now, reminderMs: reminderMs || null };
@@ -512,18 +599,25 @@ function bindCancel(fn) { const c = $('#cancel'); if (c) c.onclick = fn; }
 const cloLabel = c => t(c === 'light' ? 'clo_l' : c === 'heavy' ? 'clo_h' : 'clo_m');
 
 function stepClothing() {
-  const cur = S.profile.clothing;
-  let changed = M.clothingChanged ?? null, now = M.clothingNow || null;
+  const cur = S.profile.clothing, seat = S.profile.seat;
+  let changed = M.clothingChanged ?? null, now = M.clothingNow || null, moved = M.seatChanged ?? null;
+  const yn = (k, v) => `<div class="seg"><button type="button" data-${k}="no" class="${v === false ? 'on' : ''}">${t('no')}</button><button type="button" data-${k}="yes" class="${v === true ? 'on' : ''}">${t('yes')}</button></div>`;
   const draw = () => {
-    screen(`<main class="body">${topbar()}<div class="step">${eyebrow(1)}</div><h1>${t('clo_title')}</h1><p class="t">${t('clo_current', cloLabel(cur))}</p>
-      <div class="seg"><button type="button" data-v="no" class="${changed === false ? 'on' : ''}">${t('no')}</button><button type="button" data-v="yes" class="${changed === true ? 'on' : ''}">${t('yes')}</button></div>
+    screen(`<main class="body">${topbar()}<div class="step">${eyebrow(1)}</div>
+      <h1>${t('clo_title')}</h1><p class="t">${t('clo_current', cloLabel(cur))}</p>${yn('v', changed)}
       ${changed ? `<div class="lab">${t('clo_now')}</div><div class="seg" id="clo">${[['light', t('clo_l'), t('clo_ls')], ['medium', t('clo_m'), t('clo_ms')], ['heavy', t('clo_h'), t('clo_hs')]].map(([v, l, s]) => `<button type="button" data-c="${v}" class="${now === v ? 'on' : ''}">${l}<small>${s}</small></button>`).join('')}</div>` : ''}
+      <h2 class="q2">${t('pos_title')}</h2><p class="t">${t('pos_current', t('seat_chosen', seat.rows, seat.seats))}</p>${yn('m', moved)}
+      ${moved ? `<p class="t small">${t('pos_next')}</p>` : ''}
       <div id="msg"></div><div class="spacer"></div><button class="btn" id="go" type="button">${t('next')}</button>${cancelBtn}</main>`);
     app.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { changed = b.dataset.v === 'yes'; draw(); });
     app.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { now = b.dataset.c; draw(); });
+    app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { moved = b.dataset.m === 'yes'; draw(); });
     $('#go').onclick = () => {
       if (changed == null || (changed && !now)) { $('#msg').innerHTML = errBox(t('clo_missing')); return; }
-      M.clothingChanged = changed; M.clothingNow = changed ? now : cur; M.clothingPrevious = cur; stepSelfie();
+      if (moved == null) { $('#msg').innerHTML = errBox(t('pos_missing')); return; }
+      M.clothingChanged = changed; M.clothingNow = changed ? now : cur; M.clothingPrevious = cur; M.seatChanged = moved; M.seatPrevious = seat.zone;
+      if (moved) showSeat({ fresh: true, eyebrow: eyebrow(1), title: t('pos_now'), onBack: stepClothing, onDone: () => stepSelfie() });
+      else stepSelfie();
     };
     bindCancel(endFlow);
   };
@@ -647,42 +741,118 @@ function saveMeasurement() {
     platform: 'ios_web', room_id: p.seat.room_id, seat_zone: p.seat.zone, seat_rows: hy(p.seat.rows), seat_seats: hy(p.seat.seats), seat_dist_window_m: p.seat.dist_window_m ?? '',
     selfie_source: M.selfieSource, selfie_capture_timestamp: isoLocal(r.shotMs), selfie_age_s: Math.round(r.ageMs / 1000), lens_model: r.exif.lens, image_px: `${r.width}x${r.height}`,
     reminder_timestamp: M.reminderMs ? isoLocal(M.reminderMs) : '', monitoring_started_timestamp: S.monitor.startedMs ? isoLocal(S.monitor.startedMs) : '',
-    glasses_user_override: !!r.glassesOverride, calibration_kprime_compact: activeKCompact() ?? '', ...compactFields(r)
+    glasses_user_override: !!r.glassesOverride, calibration_kprime_compact: activeKCompact() ?? '', ...compactFields(r),
+    seat_changed: !!M.seatChanged, seat_previous: M.seatPrevious || ''
   };
   S.measurements.push(rec); save();
-  const m5 = metrics[5] || {};
-  screen(`<main class="body">${topbar()}<div class="step">${M.trigger === 'scheduled' ? t('res_sched') : t('res_vol')}</div><h1>${t('res_title')}</h1>
-    <div class="tiles2"><div class="tile"><div class="s">${t('res_light')}</div><div class="bignum">${fmt(r.ev)} <small>lx</small></div></div>
-    <div class="tile"><div class="s">${t('gsv_title')}</div><div class="bignum sm">${STR[lang()].gsv[gl]}</div></div></div>
-    <div class="card"><div class="s">${t('res_sound')}</div><div class="h">${Number.isFinite(m5.laeq) ? `L<sub>Aeq</sub> ${fmt(m5.laeq, 1)} dB · ${Math.round(m5.fracValid * 100)} %` : t('res_na')}</div></div>
-    <div class="spacer"></div><button class="btn" id="go" type="button">${S.monitor.running ? t('res_back') : t('cal_done_go')}</button></main>`);
-  $('#go').onclick = endFlow;
+  showResult(rec, metrics);
   M = null;
+}
+const soundWord = ncl => !Number.isFinite(ncl) || ncl < 6 ? t('sw_steady') : ncl < 12 ? t('sw_variable') : t('sw_very');
+function showResult(rec, metrics) {
+  const m5 = metrics[5] || {}, d = new Date(Date.parse(rec.capture_timestamp));
+  const loc = lang() === 'it' ? 'it-IT' : 'en-GB';
+  let date = d.toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+  date = date.charAt(0).toUpperCase() + date.slice(1);
+  const sw = Number.isFinite(m5.laeq) ? soundWord(m5.ncl) : t('res_na');
+  screen(`<main class="body result">
+    <div class="badge" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="ck" d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+    <h1 class="rtitle">${t('res_done')}</h1><div class="rdate">${date}</div>
+    <div class="rchip">${rec.trigger_type === 'scheduled' ? t('res_sched') : t('res_vol')}</div>
+    <div class="rtiles"><div class="rtile"><span class="ric" style="background:#FBEFD9">${IC.sun.replace('#A4472B', '#C98A1E')}</span><div class="rl">${t('res_light')}</div><div class="rv">${fmt(+rec.ev_lux)}<small>lux</small></div></div>
+      <div class="rtile"><span class="ric" style="background:#F6E4DC">${IC.eye}</span><div class="rl">${t('gsv_title')}</div><div class="rv sm">${STR[lang()].gsv[rec.gsv_level]}</div></div></div>
+    <div class="rcard"><span class="ric" style="background:#E3EFE7">${IC.mic.replace('#A4472B', '#2E7D55')}</span><div><div class="rl">${t('res_sound')}</div><div class="rv2">${sw.charAt(0).toUpperCase() + sw.slice(1)}</div></div></div>
+    ${S.monitor.running ? `<div class="rnext">${t('res_next', INTERVAL_MIN)}</div>` : ''}
+    <div class="spacer"></div><button class="btn" id="go" type="button">${t('back_home')}</button>
+    <button class="linkbtn" id="det" type="button">${t('res_details')}</button></main>`);
+  $('#go').onclick = endFlow;
+  $('#det').onclick = () => showDetails(rec, () => showResult(rec, metrics));
+}
+function showDetails(rec, back) {
+  const n = (x, dd = 0) => x === '' || x == null ? '–' : fmt(+x, dd);
+  const rows = [['E<sub>v</sub>', n(rec.ev_lux) + ' lx'], ['E<sub>v</sub> sx · dx', n(rec.ev_left_lux) + ' · ' + n(rec.ev_right_lux) + ' lx'], ['ISO · t · f', `${rec.iso} · 1/${Math.round(1 / rec.exposure_s)} s · f/${n(rec.f_number, 1)}`],
+    ['GSV', n(rec.gsv_continuous_0_100, 1) + ' / 100'], [t('glare_title'), rec.glare_source_type ? `${STR[lang()].src[rec.glare_source_type] || rec.glare_source_type} · ${n(rec.glare_source_theta_deg)}° · ${n(rec.glare_source_solid_angle_sr, 3)} sr` : '–'],
+    ['TSV', n(rec.tsv_continuous, 2)], [t('ac_title'), n(rec.acoustic_discomfort_m3_p3, 2) + ' · ' + (STR[lang()].ac_src[rec.acoustic_source] || '')],
+    ['L<sub>Aeq,5min</sub>', rec.sound5_laeq ? rec.sound5_laeq + ' dB' : '–'], ['L<sub>A10</sub> · L<sub>A50</sub> · L<sub>A90</sub>', [rec.sound5_la10, rec.sound5_la50, rec.sound5_la90].map(x => x || '–').join(' · ')],
+    [t('rec_frac'), rec.sound5_frac_valid ? Math.round(rec.sound5_frac_valid * 100) + ' %' : '–'], ['k′', n(rec.calibration_kprime, 3)], [t('seat_title'), hy(rec.seat_rows) + ' · ' + hy(rec.seat_seats)]];
+  screen(`<main class="body">${topbar()}<div class="step">${t('res_details').replace(' ›', '').toUpperCase()}</div><h1>${t('res_title')}</h1>
+    <div class="card"><table class="kv">${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table></div>
+    <p class="t small">${t('det_note')}</p><div class="spacer"></div><button class="btn out" id="back" type="button">${t('back')}</button></main>`);
+  $('#back').onclick = back;
 }
 function endFlow() { stopCam(); M = null; inFlow = false; showHome(); if (S.monitor.running && sound.running()) setTimeout(showBlack, 1500); armIdle(); }
 
 // ------------------------------------------------------------------ invio dei dati
 function dayStr(ms = Date.now()) { return isoLocal(ms).slice(0, 10); }
-function showSend() {
+function stamp(ms = Date.now()) { const s = isoLocal(ms); return s.slice(0, 10) + '_' + s.slice(11, 13) + s.slice(14, 16); }
+function fileNames(ms = Date.now()) {
+  const st = stamp(ms), p = S.participant_id;
+  return { a: `COMFY_${p}_analisi_${st}.csv`, c: `COMFY_${p}_completo_${st}.csv`, s: `COMFY_${p}_suono_s_${st}.csv` };
+}
+async function researcherFiles() {
+  const nm = fileNames(), secs = await sound.allSeconds();
+  return { nm, files: [new File([X.buildAnalysis(S)], nm.a, { type: 'text/csv' }), new File([X.buildComplete(S)], nm.c, { type: 'text/csv' }), new File([X.buildSoundSeconds(secs, utcOffset)], nm.s, { type: 'text/csv' })] };
+}
+async function shareFiles(files, title, text, msgEl) {
+  if (!(navigator.canShare && navigator.share) || !navigator.canShare({ files })) { msgEl.innerHTML = errBox(t('send_unsupported')); return false; }
+  try { await navigator.share({ files, title, text }); return true; }
+  catch (e) { if (e.name !== 'AbortError') msgEl.innerHTML = errBox(e.message); return false; }
+}
+function showSend(back = () => route()) {
   const n = S.measurements.length;
-  const canShare = !!(navigator.canShare && navigator.share);
   screen(`<main class="body">${topbar()}<div class="step">${t('m_data')}</div><h1>${t('send_title')}</h1>
-    ${n ? `<p class="t">${t('send_body')}</p><div class="card mail"><span id="addr">${RESEARCHER_EMAIL}</span><button class="lang" id="copy" type="button">${t('send_copy')}</button></div>` : `<p class="t">${t('send_none')}</p>`}
+    ${n ? `<p class="t">${t('send_body')}</p><div class="card mail"><span id="addr">${RESEARCHER_EMAIL}</span><button class="lang" id="copy" type="button">${t('send_copy')}</button></div>
+      <p class="t small">${t('send_files_note')}</p>` : `<p class="t">${t('send_none')}</p>`}
     <div id="msg"></div><div class="spacer"></div>
     ${n ? `<button class="btn" id="share" type="button">${t('send_share')}</button>` : ''}<button class="btn out" id="back" type="button">${t('back')}</button></main>`);
-  $('#back').onclick = () => route();
+  $('#back').onclick = back;
   if (!n) return;
   $('#copy').onclick = () => {
     const done = () => { $('#copy').textContent = t('send_copied'); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(RESEARCHER_EMAIL).then(done, () => {}); else done();
   };
   $('#share').onclick = async () => {
-    const day = dayStr(), a = `COMFY_${S.participant_id}_analisi_${day}.csv`, c = `COMFY_${S.participant_id}_completo_${day}.csv`;
-    const files = [new File([X.buildAnalysis(S)], a, { type: 'text/csv' }), new File([X.buildComplete(S)], c, { type: 'text/csv' })];
-    const data = { files, title: t('send_subject', S.participant_id, new Date().toLocaleDateString('it-IT')), text: t('send_text', S.participant_id, device(), APP_VERSION, n, a, c) };
-    if (!canShare || !navigator.canShare({ files })) { $('#msg').innerHTML = errBox(t('send_unsupported')); return; }
-    try { await navigator.share(data); S.sends.push({ at: isoLocal(), measurements: n }); save(); showSend(); }
-    catch (e) { if (e.name !== 'AbortError') $('#msg').innerHTML = errBox(e.message); }
+    $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('send_preparing')}</div>`;
+    let pack; try { pack = await researcherFiles(); } catch (e) { $('#msg').innerHTML = errBox(t('export_err') + ' ' + e.message); return; }
+    $('#msg').innerHTML = '';
+    const ok = await shareFiles(pack.files, t('send_subject', S.participant_id, new Date().toLocaleDateString('it-IT')), t('send_text', S.participant_id, device(), APP_VERSION, n, pack.nm.a, pack.nm.c) + '\n' + t('send_text_sound', pack.nm.s), $('#msg'));
+    if (ok) { S.sends.push({ at: isoLocal(), measurements: n }); save(); showSend(back); }
+  };
+}
+
+// ------------------------------------------------------------------ dati di ricerca (come la «vista ricerca» Android)
+function showResearch() {
+  const ms = S.measurements.slice().reverse(), last = ms[0];
+  const n = (x, d = 0) => x === '' || x == null ? '–' : fmt(+x, d);
+  const key = last ? `<div class="kgrid"><div><span>E<sub>v</sub></span><b>${n(last.ev_lux)} lx</b></div><div><span>GSV</span><b>${n(last.gsv_continuous_0_100)}</b></div>
+    <div><span>${t('tsv_q')}</span><b>${n(last.tsv_continuous, 1)}</b></div><div><span>${t('res_metric_ac')}</span><b>${n(last.acoustic_discomfort_m3_p3, 1)}</b></div>
+    <div><span>L<sub>Aeq,5min</sub></span><b>${last.sound5_laeq ? last.sound5_laeq + ' dB' : '–'}</b></div><div><span>${t('rec_frac')}</span><b>${last.sound5_frac_valid ? Math.round(last.sound5_frac_valid * 100) + ' %' : '–'}</b></div></div>` : `<p class="t">${t('send_none')}</p>`;
+  const list = ms.map((m, i) => `<button class="mrow" data-i="${S.measurements.length - 1 - i}" type="button"><span class="mt">${m.capture_timestamp.slice(11, 16)}</span>
+    <span class="mi">${m.trigger_type === 'scheduled' ? t('res_sched') : t('res_vol')}<small>${n(m.ev_lux)} lx · GSV ${n(m.gsv_continuous_0_100)} · TSV ${n(m.tsv_continuous, 1)} · ${m.sound5_laeq ? m.sound5_laeq + ' dB' : '–'}</small></span><span class="mc">›</span></button>`).join('');
+  const rem = S.reminders.length, started = S.reminders.filter(r => r.action === 'started').length, skipped = S.reminders.filter(r => r.action === 'skipped').length;
+  screen(`<main class="body">${topbar()}<div class="step">${t('research_eyebrow')}</div><h1>${t('research_title')}</h1><p class="t">${t('research_sub')}</p>
+    <div class="lab">${t('research_key')}${last ? ' · ' + last.capture_timestamp.slice(11, 16) : ''}</div><div class="card">${key}</div>
+    <div class="lab">${t('research_list', S.measurements.length)}</div><div class="card list">${list || `<div class="s">${t('send_none')}</div>`}</div>
+    <div class="card"><table class="kv"><tr><td>ID</td><td>${S.participant_id}</td></tr><tr><td>k′</td><td>${n(activeK(), 3)}</td></tr>
+      <tr><td>${t('research_rem')}</td><td>${rem} · ${started} ${t('research_started')} · ${skipped} ${t('research_skipped')}</td></tr>
+      <tr><td>${t('research_sound_s')}</td><td id="nsec">…</td></tr><tr><td>${t('version')}</td><td>${APP_VERSION}</td></tr></table></div>
+    <div class="lab">${t('research_tools')}</div>
+    <button class="card action" id="rsend" type="button"><div class="flex"><div class="ic">${IC.send}</div><div><div class="h">${t('send')}</div><div class="s">${t('research_send_s')}</div></div></div></button>
+    <button class="card action" id="rall" type="button"><div class="flex"><div class="ic">${IC.lib}</div><div><div class="h">${t('research_all')}</div><div class="s">${t('research_all_s')}</div></div></div></button>
+    <div id="msg"></div><button class="btn out" id="back" type="button">${t('back')}</button></main>`);
+  $('#back').onclick = () => route();
+  sound.allSeconds().then(s => { const el = $('#nsec'); if (el) el.textContent = `${s.length} s (${fmt(s.length / 3600, 1)} h)`; }).catch(() => {});
+  app.querySelectorAll('.mrow').forEach(b => b.onclick = () => showDetails(S.measurements[+b.dataset.i], showResearch));
+  $('#rsend').onclick = () => showSend(showResearch);
+  $('#rall').onclick = async () => {
+    $('#msg').innerHTML = `<div class="busy"><span class="spin"></span>${t('send_preparing')}</div>`;
+    try {
+      const pack = await researcherFiles(), st = stamp(), p = S.participant_id, f = (name, csv) => new File([csv], `COMFY_${p}_${name}_${st}.csv`, { type: 'text/csv' });
+      const files = [...pack.files, f('calibrazioni', X.buildCalibrations(S)), f('promemoria', X.buildTable(S.reminders)), f('misure_prova_luce', X.buildTable(S.light_tests)),
+        f('profilo', X.buildTable(S.profile_changes || [])), f('checkin', X.buildTable(S.baselines))];
+      $('#msg').innerHTML = '';
+      await shareFiles(files, `COMFY – ${p} – ${t('research_all')}`, '', $('#msg'));
+    } catch (e) { $('#msg').innerHTML = errBox(t('export_err') + ' ' + e.message); }
   };
 }
 
@@ -722,7 +892,8 @@ function showHome() {
       ${mon.pending ? `<button class="btn" id="go" type="button">${t('b_go')}</button>` : `<div class="dimhint" id="dimhint">${dimHint()}</div>`}`;
   const sw = `<div class="card swcard"><div class="flex"><div class="ic">${IC.mic}</div><div style="flex:1"><div class="h">${t('mon_switch')}</div><div class="s">${!mon.running ? t('mon_switch_off') : paused ? t('b_paused') : t('mon_switch_on')}</div></div>
       <button class="sw ${mon.running ? 'on' : ''}" id="sw" type="button" role="switch" aria-checked="${mon.running}" aria-label="${t('mon_switch')}"><i></i></button></div></div>`;
-  screen(`<main class="body" id="home">${topbar(true)}${hero}${sw}<div id="msg"></div>
+  const off = navigator.onLine === false ? `<div class="offchip">${t('offline_home')}</div>` : '';
+  screen(`<main class="body" id="home">${topbar(true)}${off}${hero}${sw}<div id="msg"></div>
     <button class="card action blink" id="vol" type="button"><div class="flex"><div class="ic">${IC.sun}</div><div><div class="h">${t('vol')}</div><div class="s">${t('vol_s')}</div></div></div></button>
     <div class="card"><div class="h">${todays.length ? t('b_today', todays.length) : t('b_today_none')}</div>
       <div class="s">${last ? t('b_last', last.capture_timestamp.slice(11, 16), fmt(+last.ev_lux)) : t('seat_chosen', S.profile.seat.rows, S.profile.seat.seats)}</div></div>
@@ -757,7 +928,9 @@ function showMenu() {
   el.innerHTML = `<div class="dim"></div><nav class="sheet" aria-label="${t('menu')}">
     <div class="sec">${t('m_data')}</div>
     <button type="button" data-a="send"><span class="ic">${IC.send}</span>${t('send')}</button>
+    <button type="button" data-a="research"><span class="ic">${IC.lib}</span>${t('research_title')}</button>
     <div class="sec">${t('m_mon')}</div>
+    <button type="button" data-a="profile"><span class="ic">${IC.user}</span>${t('menu_profile')}</button>
     <button type="button" data-a="test"><span class="ic">${IC.sun}</span>${t('home_test')}</button>
     <button type="button" data-a="recal"><span class="ic">${IC.cam}</span>${t('home_recal')}</button>
     <div class="sec">${t('m_help')}</div>
@@ -770,7 +943,8 @@ function showMenu() {
   el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
     close();
     const a = b.dataset.a;
-    if (a === 'send') showSend(); else if (a === 'test') showLightTest(); else if (a === 'recal') showCalRef(true);
+    if (a === 'send') showSend(); else if (a === 'research') showResearch(); else if (a === 'test') showLightTest(); else if (a === 'recal') showCalGuide(true);
+    else if (a === 'profile') showProfile(() => showSeat({ eyebrow: t('menu_profile').toUpperCase(), log: true, onDone: () => route(), onBack: () => showProfile(() => route()) }));
     else if (a === 'help') showInstructions(0, true); else if (a === 'lang') { S.lang = lang() === 'it' ? 'en' : 'it'; save(); route(); }
   });
 }
@@ -813,3 +987,6 @@ async function checkUpdate() {
 if (S.monitor.running && !S.monitor.pausedSinceMs) { S.monitor.pausedSinceMs = Date.now(); save(); }   // dopo un ricaricamento serve un tocco per riattivare il microfono
 route();
 checkUpdate();
+
+window.addEventListener('online', () => { if ($('#home') && !inFlow) showHome(); });
+window.addEventListener('offline', () => { if ($('#home') && !inFlow) showHome(); });

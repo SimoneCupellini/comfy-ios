@@ -63,7 +63,11 @@ export class SoundEngine {
   constructor() {
     this.history = []; this.pending = []; this.status = 'off'; this.lastLa = NaN; this.listeners = new Set();
     this.ctx = null; this.stream = null; this.node = null; this.settings = null;
+    this.excluded = []; this.onError = null;   // intervalli [da, a] in ms esclusi dai campioni (bip dei promemoria)
   }
+  /** Esclude dai campioni i secondi tra fromMs e toMs (es. i bip del promemoria, che il microfono registrerebbe). */
+  exclude(fromMs, toMs, reason = 'beep') { this.excluded.push([fromMs, toMs, reason]); const cut = Date.now() - 120000; this.excluded = this.excluded.filter(x => x[1] > cut); }
+  exclusionAt(epochSec) { const a = epochSec * 1000, b = a + 1000; const x = this.excluded.find(([f, to]) => f < b && to > a); return x ? x[2] : null; }
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   emit() { this.listeners.forEach(f => { try { f(this); } catch (e) { } }); }
 
@@ -94,7 +98,7 @@ export class SoundEngine {
     if (this.ctx.state !== 'running') await this.ctx.resume();
     this.ctx.onstatechange = () => { this.status = this.ctx.state === 'running' ? 'ok' : 'paused'; this.emit(); };
     this.status = 'ok'; this.emit();
-    if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 15000);
+    if (!this.flushTimer) this.flushTimer = setInterval(() => this.flush(), 5000);
   }
   async resume() { if (this.ctx && this.ctx.state !== 'running') { try { await this.ctx.resume(); } catch (e) { } } this.status = this.ctx && this.ctx.state === 'running' ? 'ok' : 'paused'; this.emit(); }
   stop() {
@@ -105,9 +109,12 @@ export class SoundEngine {
 
   onSecond(s) {
     const epoch = Math.floor(Date.now() / 1000);
-    const valid = Number.isFinite(s.laeq);
-    const sec = { e: epoch, la: valid ? s.laeq : NaN, lz: s.lzeq, b: valid ? s.bands.map(x => Number.isFinite(x) ? +x.toFixed(2) : null) : null };
-    this.lastLa = sec.la;
+    const ex = this.exclusionAt(epoch) || this.exclusionAt(epoch - 1);   // il secondo appena chiuso copre circa [epoch-1, epoch]
+    const valid = Number.isFinite(s.laeq) && !ex;
+    const st = ex ? 'excluded_' + ex : Number.isFinite(s.laeq) ? 'ok' : 'invalid';
+    const sec = { e: epoch, la: valid ? s.laeq : NaN, lz: valid ? s.lzeq : NaN, b: valid ? s.bands.map(x => Number.isFinite(x) ? +x.toFixed(2) : null) : null, st,
+      rawLa: Number.isFinite(s.laeq) ? s.laeq : NaN };
+    this.lastLa = Number.isFinite(s.laeq) ? s.laeq : NaN;
     this.add(sec, true); this.emit();
   }
   add(sec, persist) {
@@ -116,13 +123,16 @@ export class SoundEngine {
     const eb = sec.b ? sec.b.map(x => x == null ? NaN : e(x)) : null;
     h.push({ e: sec.e, la: sec.la == null ? NaN : sec.la, eb, low: eb ? groupEnergy(eb, LOW) : NaN, mid: eb ? groupEnergy(eb, MID) : NaN, high: eb ? groupEnergy(eb, HIGH) : NaN });
     while (h.length && h[0].e <= sec.e - HISTORY_S) h.shift();
-    if (persist) this.pending.push({ e: sec.e, la: Number.isFinite(sec.la) ? +sec.la.toFixed(2) : null, lz: Number.isFinite(sec.lz) ? +sec.lz.toFixed(2) : null, b: sec.b });
+    if (persist) this.pending.push({ e: sec.e, la: Number.isFinite(sec.la) ? +sec.la.toFixed(2) : null, lz: Number.isFinite(sec.lz) ? +sec.lz.toFixed(2) : null, b: sec.b,
+      st: sec.st || 'ok', raw: Number.isFinite(sec.rawLa) ? +sec.rawLa.toFixed(2) : null });
   }
   async flush() {
     if (!this.pending.length) return;
     const batch = this.pending.splice(0);
-    try { const db = await openDb(); const tx = db.transaction('sec', 'readwrite'); const st = tx.objectStore('sec'); batch.forEach(r => st.put(r)); }
-    catch (e) { console.warn('flush sound', e); }
+    try {
+      const db = await openDb();
+      await new Promise((res, rej) => { const tx = db.transaction('sec', 'readwrite'); const st = tx.objectStore('sec'); batch.forEach(r => st.put(r)); tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); });
+    } catch (e) { console.warn('flush sound', e); this.pending.unshift(...batch); if (this.onError) this.onError(e); }
   }
 
   /** Frazione di secondi validi negli ultimi n secondi (per l'indicatore). */
@@ -165,9 +175,17 @@ export class SoundEngine {
     return { level: r5.fracValid >= 0.95 ? 'high' : r5.fracValid >= MIN_VALID_FRACTION ? 'medium' : 'low', flags: f.length ? f.join('|') : 'ok' };
   }
 
-  /** Tre bip per il promemoria (stesso AudioContext del microfono). */
+  /** Tutti i secondi registrati (IndexedDB), per l'esportazione dello storico sonoro continuo. */
+  async allSeconds() {
+    await this.flush();
+    const db = await openDb();
+    return new Promise((res, rej) => { const q = db.transaction('sec').objectStore('sec').getAll(); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  }
+
+  /** Tre bip per il promemoria (stesso AudioContext del microfono); i secondi dei bip sono esclusi dai campioni. */
   beep() {
     if (!this.ctx) return;
+    this.exclude(Date.now() - 500, Date.now() + 2500, 'beep');
     try {
       const o = this.ctx.createOscillator(), g = this.ctx.createGain(), t0 = this.ctx.currentTime;
       o.frequency.value = 880; g.gain.setValueAtTime(0, t0);

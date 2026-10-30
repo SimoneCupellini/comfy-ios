@@ -18,14 +18,20 @@
 <div id="app"><main class="body"><p class="t">COMFY…</p></main></div>
 <noscript>COMFY richiede JavaScript.</noscript>
 <script>
-// Carica sempre l'ultima versione pubblicata: version.json non passa dalla cache, e la versione
-// viene aggiunta all'indirizzo di tutti i file, cosi' Safari non usa copie vecchie.
+// Carica sempre l'ultima versione pubblicata: version.json non passa dalla cache e la versione viene aggiunta
+// all'indirizzo di tutti i file. Senza connessione si riparte dall'ultima versione salvata (service worker).
 (async () => {
-  let v = 'dev';
-  try { v = (await (await fetch('version.json?t=' + Date.now(), { cache: 'no-store' })).json()).version || v; } catch (e) {}
+  if ('serviceWorker' in navigator) { try { await navigator.serviceWorker.register('sw.js'); } catch (e) {} }
+  let v = null;
+  try { v = (await (await fetch('version.json?t=' + Date.now(), { cache: 'no-store' })).json()).version; } catch (e) {}
+  try { if (v) localStorage.setItem('comfy_last_version', v); else v = localStorage.getItem('comfy_last_version'); } catch (e) {}
+  v = v || 'dev';
   document.getElementById('css').href = 'style.css?v=' + v;
   import('./app.js?v=' + v).catch(err => {
-    document.getElementById('app').innerHTML = '<main class="body"><h1>COMFY</h1><p class="t">Errore di avvio: ' + String(err && err.message || err) + '</p></main>';
+    const offline = navigator.onLine === false;
+    document.getElementById('app').innerHTML = '<main class="body"><h1>COMFY</h1><p class="t">' + (offline
+      ? 'Sei offline e COMFY non è ancora salvato su questo telefono: aprilo una volta con la connessione attiva. / You are offline: open COMFY once with a connection.'
+      : 'Errore di avvio: ' + String(err && err.message || err)) + '</p></main>';
   });
 })();
 </script>

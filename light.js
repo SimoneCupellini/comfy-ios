@@ -324,3 +324,18 @@ export function detectGlasses(src, lm) {
     return { status: conf >= 0.72 ? 'detected' : conf >= 0.52 ? 'possible' : 'not_detected', confidence: conf };
   } catch (e) { return { status: 'unknown', confidence: 0 }; }
 }
+
+// ------------------------------------------------------------------ controllo dal vivo durante l'anteprima (come LiveFaceAnalyzer Android)
+let liveCanvas = null;
+/** Analizza un fotogramma dell'anteprima: volto presente e occhiali (controllo sperimentale). */
+export async function liveCheck(video) {
+  if (!video || !video.videoWidth) return { face: false, glasses: { status: 'unknown', confidence: 0 } };
+  const fl = await loadLandmarker();
+  const w = 480, h = Math.round(480 * video.videoHeight / video.videoWidth);
+  if (!liveCanvas) liveCanvas = document.createElement('canvas');
+  liveCanvas.width = w; liveCanvas.height = h;
+  liveCanvas.getContext('2d', { willReadFrequently: true }).drawImage(video, 0, 0, w, h);
+  const res = fl.detect(liveCanvas), faces = res.faceLandmarks || [];
+  if (faces.length !== 1) return { face: false, glasses: { status: 'unknown', confidence: 0 } };
+  return { face: true, glasses: detectGlasses(liveCanvas, faces[0]) };
+}

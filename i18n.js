@@ -11,7 +11,7 @@ export const STR = {
     inst_notsafari: 'Stai usando un browser diverso da Safari: apri questo indirizzo in Safari.',
     // benvenuto
     wel_title: 'Benvenuto in COMFY',
-    wel_body: 'Durante la lezione COMFY misura la luce sul tuo volto e il suono intorno a te, e ogni 20 minuti ti chiede come ti senti. Ci vogliono circa 2 minuti a misura.',
+    wel_body: 'Durante la lezione COMFY misura la luce sul tuo volto e il suono intorno a te, e ogni 10 minuti ti chiede come ti senti. Ci vogliono circa 2 minuti a misura.',
     wel_p1: 'Configurazione', wel_p1s: 'profilo, posto in aula e calibrazione della luce: circa 3 minuti',
     wel_p2: 'Monitoraggio', wel_p2s: 'telefono sul banco, COMFY aperto, schermo nero',
     wel_p3: 'Selfie', wel_p3s: 'li scatti dentro COMFY: vengono analizzati sul telefono e nessuna foto viene salvata né inviata.',
@@ -138,6 +138,31 @@ export const STR = {
     b_next: (h, m) => `Prossima misura ${h} · tra ${m} min`, b_due: h => `Misura da fare · dalle ${h}`, b_snoozed: h => `Misura rimandata · alle ${h}`,
     b_skipped: (h, n) => `Misura delle ${h} saltata · prossima ${n}`, b_go: 'Inizia la misura',
     b_today: n => `Oggi · ${n} ${n === 1 ? 'misura' : 'misure'}`, b_today_none: 'Oggi · nessuna misura', b_last: (h, ev) => `Ultima alle ${h} · luce ${ev} lx`,
+    // ---- v0.5
+    seat_aisle: 'corridoio', menu_profile: 'Modifica profilo',
+    pos_title: 'Hai cambiato posizione?', pos_current: x => `Ultima registrata: ${x}`, pos_now: 'Dove sei seduto ora?', pos_missing: 'Rispondi se hai cambiato posizione.',
+    pos_next: 'Dopo «Avanti» scegli la nuova zona sulla pianta.',
+    cal3d_eyebrow: 'CALIBRAZIONE · COME SI MISURA', cal3d_counter: (i, n) => `Passo ${i} di ${n}`, cal3d_continue: 'Inserisci il valore misurato', cal3d_replay: 'Rivedi l\'animazione', cal3d_prev: 'Passo precedente', cal3d_next: 'Passo successivo',
+    cal3d: [
+      ['Siediti alla tua postazione', 'Mettiti come quando lavori e guarda davanti a te, nella tua direzione abituale: la linea tratteggiata è la tua linea di vista.'],
+      ['Telefono taratore accanto al volto', 'Il ricercatore porta il telefono taratore accanto alla tua guancia, all\'altezza degli occhi.'],
+      ['Schermo rivolto in avanti', 'Lo schermo è rivolto nella direzione del tuo sguardo e il ricercatore preme «Avvia lettura»: 5 secondi per posizionarlo, poi 5 secondi di misura.'],
+      ['Leggi il valore in lux', 'Dopo la vibrazione il ricercatore ti comunica il valore: nella schermata successiva lo inserisci, poi scatti il selfie.']
+    ],
+    res_done: 'Misura eseguita correttamente', res_next: m => `Prossima misura tra ${m} min: COMFY suonerà`, back_home: 'Torna alla home', res_details: 'Vedi i dettagli ›',
+    sw_steady: 'stabile', sw_variable: 'variabile', sw_very: 'molto variabile', rec_frac: 'Secondi registrati (5 min)',
+    det_note: 'Livelli sonori in dB non calibrati: servono solo a confrontare momenti diversi sullo stesso telefono.',
+    // ---- v0.6
+    save_err_t: 'COMFY non riesce a salvare i dati sul telefono.', save_err_b: 'Non chiudere COMFY: libera spazio sull\'iPhone e tocca Riprova, poi invia subito i dati al ricercatore.', save_retry: 'Riprova',
+    live_noface: 'Inquadra il volto dentro l\'ovale', live_ready: 'Pronto: tocca Scatta',
+    glasses_detected_live: 'Occhiali rilevati · toglili per continuare', glasses_possible_live: 'Forse indossi occhiali · toglili per continuare',
+    send_files_note: 'File allegati: dati per l\'analisi, copia completa e storico del suono al secondo. Il nome dei file contiene data e ora dell\'invio.',
+    send_preparing: 'Preparo i file…', export_err: 'Non è stato possibile preparare i file.', send_text_sound: n => `· ${n} (storico del suono al secondo)`,
+    research_eyebrow: 'VISTA RICERCA', research_title: 'Dati di ricerca', research_sub: 'I valori tecnici delle misure non compaiono nel normale flusso e restano disponibili qui quando vuoi controllarli.',
+    research_key: 'Ultima misura', research_list: n => `Misure registrate (${n})`, research_rem: 'Promemoria', research_started: 'iniziati', research_skipped: 'saltati',
+    research_sound_s: 'Secondi di suono registrati', research_tools: 'STRUMENTI DELLO STUDIO', research_send_s: '3 file: analisi, completo, suono al secondo',
+    research_all: 'Esporta tutti i file', research_all_s: 'Anche calibrazioni, promemoria, misure di prova, check-in e modifiche del profilo', res_metric_ac: 'Comfort acustico',
+    offline_home: 'Offline · le misure restano salvate sul telefono; per inviarle serve la connessione',
     menu_lang: 'Lingua', version: 'Versione'
   },
   en: {
@@ -149,7 +174,7 @@ export const STR = {
     inst_3: 'Open COMFY from the Home Screen', inst_3s: 'and continue the setup there',
     inst_notsafari: 'You are not using Safari: open this address in Safari.',
     wel_title: 'Welcome to COMFY',
-    wel_body: 'During the lecture COMFY measures the light on your face and the sound around you, and every 20 minutes it asks how you feel. Each measurement takes about 2 minutes.',
+    wel_body: 'During the lecture COMFY measures the light on your face and the sound around you, and every 10 minutes it asks how you feel. Each measurement takes about 2 minutes.',
     wel_p1: 'Setup', wel_p1s: 'profile, seat and light calibration: about 3 minutes',
     wel_p2: 'Monitoring', wel_p2s: 'phone on the desk, COMFY open, black screen',
     wel_p3: 'Selfies', wel_p3s: 'you take them inside COMFY: they are analysed on the phone and no photo is saved or sent.',
@@ -268,6 +293,31 @@ export const STR = {
     b_next: (h, m) => `Next measurement ${h} · in ${m} min`, b_due: h => `Measurement due · since ${h}`, b_snoozed: h => `Measurement postponed · at ${h}`,
     b_skipped: (h, n) => `Measurement at ${h} skipped · next ${n}`, b_go: 'Start the measurement',
     b_today: n => `Today · ${n} ${n === 1 ? 'measurement' : 'measurements'}`, b_today_none: 'Today · no measurements', b_last: (h, ev) => `Last at ${h} · light ${ev} lx`,
+    // ---- v0.5
+    seat_aisle: 'aisle', menu_profile: 'Edit profile',
+    pos_title: 'Have you changed seat?', pos_current: x => `Last recorded: ${x}`, pos_now: 'Where are you sitting now?', pos_missing: 'Tell us whether you changed seat.',
+    pos_next: 'After “Next” choose the new area on the plan.',
+    cal3d_eyebrow: 'CALIBRATION · HOW TO MEASURE', cal3d_counter: (i, n) => `Step ${i} of ${n}`, cal3d_continue: 'Enter the measured value', cal3d_replay: 'Replay the animation', cal3d_prev: 'Previous step', cal3d_next: 'Next step',
+    cal3d: [
+      ['Sit at your workstation', 'Sit as when you work and look ahead in your usual direction: the dashed line is your line of sight.'],
+      ['Calibrator phone next to your face', 'The researcher brings the calibrator phone next to your cheek, at eye level.'],
+      ['Screen facing forward', 'The screen faces your viewing direction and the researcher presses “Start reading”: 5 seconds to position it, then 5 seconds of measurement.'],
+      ['Read the value in lux', 'After the vibration the researcher tells you the value: in the next screen you enter it, then you take the selfie.']
+    ],
+    res_done: 'Measurement completed', res_next: m => `Next measurement in ${m} min: COMFY will ring`, back_home: 'Back to home', res_details: 'View details ›',
+    sw_steady: 'steady', sw_variable: 'variable', sw_very: 'very variable', rec_frac: 'Seconds recorded (5 min)',
+    det_note: 'Sound levels in uncalibrated dB: only for comparing moments on the same phone.',
+    // ---- v0.6
+    save_err_t: 'COMFY cannot save data on the phone.', save_err_b: 'Do not close COMFY: free up space on the iPhone and tap Retry, then send the data to the researcher right away.', save_retry: 'Retry',
+    live_noface: 'Frame your face inside the oval', live_ready: 'Ready: tap Shoot',
+    glasses_detected_live: 'Glasses detected · take them off to continue', glasses_possible_live: 'You may be wearing glasses · take them off to continue',
+    send_files_note: 'Attached files: analysis data, complete copy and per-second sound history. File names contain the date and time of sending.',
+    send_preparing: 'Preparing the files…', export_err: 'The files could not be prepared.', send_text_sound: n => `· ${n} (per-second sound history)`,
+    research_eyebrow: 'RESEARCH VIEW', research_title: 'Research data', research_sub: 'Technical measurement values do not appear in the normal flow and are available here whenever you want to check them.',
+    research_key: 'Last measurement', research_list: n => `Recorded measurements (${n})`, research_rem: 'Reminders', research_started: 'started', research_skipped: 'skipped',
+    research_sound_s: 'Seconds of sound recorded', research_tools: 'STUDY TOOLS', research_send_s: '3 files: analysis, complete, per-second sound',
+    research_all: 'Export all files', research_all_s: 'Also calibrations, reminders, test measurements, check-in and profile changes', res_metric_ac: 'Acoustic comfort',
+    offline_home: 'Offline · measurements stay saved on the phone; sending them needs a connection',
     menu_lang: 'Language', version: 'Version'
   }
 };

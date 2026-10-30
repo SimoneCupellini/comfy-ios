@@ -37,7 +37,8 @@ export const COMPLETE_COLUMNS = [
   'platform', 'room_id', 'seat_zone', 'seat_rows', 'seat_seats', 'seat_dist_window_m', 'selfie_source', 'selfie_capture_timestamp', 'selfie_age_s', 'lens_model', 'image_px',
   'reminder_timestamp', 'monitoring_started_timestamp', 'glasses_user_override',
   // ROI alta-guancia compatta (solo confronto, non usata per Ev)
-  'ym_compact_left', 'ym_compact_right', 'ym_compact', 'roi_compact_pixels', 'roi_compact_clipping_ratio', 'roi_compact_left_right_difference', 'calibration_kprime_compact', 'ev_compact_lux', 'roi_compact_method'
+  'ym_compact_left', 'ym_compact_right', 'ym_compact', 'roi_compact_pixels', 'roi_compact_clipping_ratio', 'roi_compact_left_right_difference', 'calibration_kprime_compact', 'ev_compact_lux', 'roi_compact_method',
+  'seat_changed', 'seat_previous'
 ];
 
 export const ANALYSIS_COLUMNS = [
@@ -93,4 +94,23 @@ export function soundFields(metrics, anchorIso, status, source, quality) {
   [1, 10, 30].forEach(w => { const r = metrics[w] || {}; [['frac_valid', r.fracValid, 2], ['laeq', r.laeq], ['ncl', r.ncl], ['meq', r.meq], ['dlaeq_prev', r.dLaeq]].forEach(([k, v, d]) => out[`sound${w}_${k}`] = f(v, d ?? 1)); });
   for (let i = 0; i < N_BANDS; i++) out[`sound5_lzeq_${bandLabel(i)}`] = f(r5.bands ? r5.bands[i] : NaN);
   return out;
+}
+
+/** Storico sonoro continuo al secondo (come il file sound_s dell'app Android): un secondo per riga. */
+export function buildSoundSeconds(secs, utc) {
+  const p = n => String(n).padStart(2, '0');
+  const cols = ['date', 'time', 'epoch_s', 'utc_offset', 'state', 'laeq_1s', 'lzeq_1s', 'laeq_1s_raw', ...Array.from({ length: N_BANDS }, (_, i) => `lzeq_${bandLabel(i)}`)];
+  const rows = secs.slice().sort((a, b) => a.e - b.e).map(s => {
+    const d = new Date(s.e * 1000);
+    const r = { date: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, time: `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`, epoch_s: s.e,
+      utc_offset: utc(s.e * 1000), state: s.st || (s.la == null ? 'invalid' : 'ok'), laeq_1s: s.la, lzeq_1s: s.lz, laeq_1s_raw: s.raw ?? s.la };
+    for (let i = 0; i < N_BANDS; i++) r[`lzeq_${bandLabel(i)}`] = s.b ? s.b[i] : '';
+    return r;
+  });
+  return toCsv(cols, rows);
+}
+/** Tabella generica (registro dei promemoria, modifiche del profilo, misure di prova, calibrazioni). */
+export function buildTable(rows) {
+  const cols = []; rows.forEach(r => Object.keys(r).forEach(k => { if (!cols.includes(k)) cols.push(k); }));
+  return toCsv(cols.length ? cols : ['empty'], rows);
 }
