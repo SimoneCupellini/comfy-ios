@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.11.0';
+export const APP_VERSION = 'web-ios-0.12.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -586,7 +586,12 @@ async function startMonitoring() {
   try { await sound.start(); }
   catch (e) { console.error(e); const m = $('#msg'); if (m) m.innerHTML = errBox(t('mon_mic_denied')); return; }
   const now = Date.now();
-  if (!S.monitor.running) { S.monitor = { running: true, startedMs: now, nextDueMs: now + INTERVAL_MIN * 60000, pausedSinceMs: null }; }
+  if (!S.monitor.running) {
+    // v0.12: al primo avvio della giornata la prima misura parte subito, senza attendere i 10 minuti
+    const today = new Date(now).toDateString();
+    const measuredToday = S.measurements.some(m => new Date(Date.parse(m.capture_timestamp)).toDateString() === today);
+    S.monitor = { running: true, startedMs: now, nextDueMs: measuredToday ? now + INTERVAL_MIN * 60000 : now + 1500, pausedSinceMs: null };
+  }
   else { S.monitor.pausedSinceMs = null; if (!S.monitor.nextDueMs) S.monitor.nextDueMs = now + INTERVAL_MIN * 60000; }
   save(); keepAwake(); showHome(); armIdle();
 }
