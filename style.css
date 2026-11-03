@@ -342,3 +342,11 @@ span.shside{border:none;background:none}
 @keyframes insr{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes insl{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.insbody.fromr,.insbody.froml{animation:none}}
+
+/* v0.13 avviso */
+#notice{position:fixed;inset:0;z-index:75;background:rgba(20,14,12,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+#notice .nbox{background:var(--card);color:var(--ink);border-radius:22px;padding:22px 20px 18px;max-width:380px;width:100%;box-shadow:0 18px 40px rgba(0,0,0,.3)}
+#notice h2{margin:0 0 8px;font-size:21px;color:var(--brand)}
+#notice .nbody{font-size:15px;line-height:1.45}
+#notice .nbody p{margin:0 0 10px}
+#notice .btn{width:100%;margin-top:6px}

@@ -10,7 +10,7 @@ const INS = await import('./instructions.js' + VQ);
 const C = await import('./coach.js' + VQ);
 const { analyzeSelfie, loadLandmarker, LightError, PERIOCULAR_METHOD_ID, OFFICIAL_EV_METHOD, BILATERAL_METHOD } = L;
 
-export const APP_VERSION = 'web-ios-0.12.0';
+export const APP_VERSION = 'web-ios-0.13.0';
 const INTERVAL_MIN = 10;
 const RESEARCHER_EMAIL = 'simone.cupellini@mail.polimi.it';
 const KEY = 'comfy_web_v1';
@@ -582,18 +582,30 @@ async function keepAwake() {
   if (wake && !wake.released) return;
   try { wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
 }
+// v0.13: avviso a schermo intero (blocco automatico, rientro dopo che COMFY era chiusa)
+let noticeOpen = false;
+function showNotice(title, body, btn) {
+  const old = $('#notice'); if (old) old.remove();
+  noticeOpen = true; C.stop(); hideBlack();
+  const el = document.createElement('div'); el.id = 'notice';
+  el.innerHTML = `<div class="nbox"><h2>${title}</h2><div class="nbody">${body}</div><button class="btn" id="noticego" type="button">${btn}</button></div>`;
+  document.body.appendChild(el);
+  $('#noticego').onclick = () => { el.remove(); noticeOpen = false; keepAwake(); armIdle(); };
+}
 async function startMonitoring() {
   try { await sound.start(); }
   catch (e) { console.error(e); const m = $('#msg'); if (m) m.innerHTML = errBox(t('mon_mic_denied')); return; }
-  const now = Date.now();
+  const now = Date.now(); let fresh = false;
   if (!S.monitor.running) {
     // v0.12: al primo avvio della giornata la prima misura parte subito, senza attendere i 10 minuti
     const today = new Date(now).toDateString();
     const measuredToday = S.measurements.some(m => new Date(Date.parse(m.capture_timestamp)).toDateString() === today);
     S.monitor = { running: true, startedMs: now, nextDueMs: measuredToday ? now + INTERVAL_MIN * 60000 : now + 1500, pausedSinceMs: null };
+    fresh = true;
   }
   else { S.monitor.pausedSinceMs = null; if (!S.monitor.nextDueMs) S.monitor.nextDueMs = now + INTERVAL_MIN * 60000; }
   save(); keepAwake(); showHome(); armIdle();
+  if (fresh) showNotice(t('lock_title'), t('lock_body'), t('lock_go'));   // v0.13
 }
 function stopMonitoring() { S.monitor.running = false; S.monitor.endedMs = Date.now(); save(); sound.stop(); try { wake && wake.release(); } catch (e) { } hideBlack(); showHome(); }
 function monitoringPaused() { return S.monitor.running && !sound.running(); }
@@ -602,7 +614,7 @@ function armIdle() { clearTimeout(idleTimer); idleAt = 0; if (C.isActive()) retu
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => armIdle(), { passive: true }));
 
 function showBlack() {
-  if (!S.monitor.running || inFlow || S.monitor.pending || C.isActive()) return;
+  if (!S.monitor.running || noticeOpen || inFlow || S.monitor.pending || C.isActive()) return;
   let b = $('#black');
   if (!b) { b = document.createElement('div'); b.id = 'black'; document.body.appendChild(b); b.onclick = () => { hideBlack(); showHome(); armIdle(); }; }
   b.hidden = false; renderBlack();
@@ -1134,21 +1146,42 @@ setInterval(() => {
   if (mon.running) {
     if (!sound.running() && !mon.pausedSinceMs) { mon.pausedSinceMs = now; save(); if ($('#home') && !inFlow) showHome(); }
     if (sound.running() && mon.pausedSinceMs) { mon.pausedSinceMs = null; save(); if ($('#home') && !inFlow) showHome(); }
-    if (mon.pending && now - mon.pending.dueMs >= SKIP_AFTER_MS && !inFlow) skipPending();
-    else if (!inFlow && sound.running() && !mon.pending && now >= mon.nextDueMs) showReminder(mon.nextDueMs);
+    if (mon.awayMs) { /* v0.13: appena rientrati, decide checkReturn() */ }
+    else if (mon.pending && now - mon.pending.dueMs >= SKIP_AFTER_MS && !inFlow && !noticeOpen) skipPending();
+    else if (!inFlow && !noticeOpen && sound.running() && !mon.pending && now >= mon.nextDueMs) {
+      let due = mon.nextDueMs;
+      // v0.13: promemoria perso perche' COMFY era chiusa -> si registra e si propone subito la misura
+      if (now - due >= SKIP_AFTER_MS) { logReminder(due, 'app_closed'); due = now; mon.nextDueMs = now; save(); }
+      showReminder(due);
+    }
     if (mon.lastSkipped && now >= mon.lastSkipped.nextMs + 60000) { mon.lastSkipped = null; save(); }
   }
   if (!inFlow) updateHome();
   renderBlack();
 }, 1000);
 
+// v0.13: se COMFY resta chiusa (app in background o telefono bloccato) il suono non viene misurato
+const AWAY_NOTICE_MS = 15000;
+function markAway() { if (S.monitor.running && !S.monitor.awayMs) { S.monitor.awayMs = Date.now(); save(); } }
+function checkReturn() {
+  const mon = S.monitor; if (!mon.awayMs) return;
+  const now = Date.now(), away = now - mon.awayMs; mon.awayMs = null;
+  if (mon.running && away >= AWAY_NOTICE_MS) {
+    if (mon.pending && now - mon.pending.dueMs >= SKIP_AFTER_MS) {   // promemoria scaduto mentre COMFY era chiusa: si ripropone
+      closeReminderEl(); logReminder(mon.pending.dueMs, 'app_closed'); mon.pending = null; mon.nextDueMs = now;
+    }
+    save();
+    showNotice(t('away_title'), t('away_body', Math.max(1, Math.round(away / 60000))), t('away_go'));
+  } else save();
+}
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
     if (S.monitor.running) { await sound.resume(); keepAwake(); }
     if ($('#home')) showHome();
-  } else { sound.flush(); }
+    checkReturn();
+  } else { markAway(); sound.flush(); }
 });
-window.addEventListener('pagehide', () => sound.flush());
+window.addEventListener('pagehide', () => { markAway(); sound.flush(); });
 
 // ------------------------------------------------------------------ aggiornamenti: controlla version.json a ogni apertura
 async function checkUpdate() {
@@ -1166,6 +1199,7 @@ async function checkUpdate() {
 if (S.monitor.snoozed) { S.monitor.snoozed = false; save(); }   // il rinvio di 2 minuti non esiste piu' (0.10)
 if (S.monitor.running && !S.monitor.pausedSinceMs) { S.monitor.pausedSinceMs = Date.now(); save(); }   // dopo un ricaricamento serve un tocco per riattivare il microfono
 route();
+checkReturn();
 checkUpdate();
 
 window.addEventListener('online', () => { if ($('#home') && !inFlow) showHome(); });
